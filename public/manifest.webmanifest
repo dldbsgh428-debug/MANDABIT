@@ -1,0 +1,18 @@
+{
+  "name": "HABITUS · 아비투스 하루 계획표",
+  "short_name": "HABITUS",
+  "description": "아비투스 7자본으로 설계하는 하루 계획표와 습관 트래커",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f9f9f7",
+  "theme_color": "#f9f9f7",
+  "lang": "ko",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
