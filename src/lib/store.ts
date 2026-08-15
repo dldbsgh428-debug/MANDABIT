@@ -42,12 +42,14 @@ let state: AppState = load()
 const listeners = new Set<() => void>()
 
 // 첫 방문이면 시드를 바로 기록해 둔다 — 습관 id가 세션마다 달라지지 않도록.
-if (!localStorage.getItem(KEY)) {
-  try {
+// 샌드박스 iframe처럼 localStorage 접근 자체가 막힌 환경에서는 읽기도 던지므로
+// 조건문까지 통째로 감싼다. 저장이 안 되면 이번 세션은 메모리로만 돈다.
+try {
+  if (!localStorage.getItem(KEY)) {
     localStorage.setItem(KEY, JSON.stringify(state))
-  } catch {
-    // 저장이 막혀도 이번 세션은 메모리 상태로 동작한다.
   }
+} catch {
+  // 무시 — 화면은 계속 동작해야 한다.
 }
 
 function emit() {
