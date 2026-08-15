@@ -1,34 +1,37 @@
 @import 'tailwindcss';
 
 /* ---------------------------------------------------------------------------
-   HABITUS design tokens.
-   Light values live on bare :root; the dark set is declared twice — once under
-   prefers-color-scheme for the OS setting, once under [data-theme="dark"] so the
-   in-app toggle wins in both directions.
-   Capital hues are the validated 7-slot categorical palette (adjacent CVD ΔE
-   9.1 light / 8.4 dark). Three light slots sit under 3:1 on the surface, so a
-   capital colour never appears without its name label beside it.
+   HABITUS 토큰
+   중립색은 아주 옅게 초록 쪽으로 기울여 두었다 — 성장을 다루는 앱이라
+   따뜻한 종이색보다 이쪽이 맞다.
+
+   자본 7색은 색각 이상 검증을 마친 팔레트다 (인접쌍 CVD ΔE 9.1 라이트 /
+   8.4 다크). 라이트에서 대비 3:1을 넘지 못하는 색이 셋 있으므로
+   자본 색 옆에는 반드시 이름표가 함께 나온다.
+
+   다크값은 두 번 선언한다. 미디어 쿼리는 OS 설정을, [data-theme]는 앱 안의
+   선택을 담당하고, :not([data-theme='light']) 가드로 양방향 모두 이긴다.
 --------------------------------------------------------------------------- */
 
 :root {
   color-scheme: light;
 
-  --page: #f9f9f7;
-  --surface: #fcfcfb;
-  --surface-sunken: #f2f1ed;
-  --ink: #0b0b0b;
-  --ink-2: #52514e;
-  --muted: #898781;
-  --grid: #e1e0d9;
-  --axis: #c3c2b7;
-  --border: rgba(11, 11, 11, 0.1);
-  --ring: rgba(11, 11, 11, 0.06);
+  --page: #f6f7f6;
+  --surface: #fdfdfc;
+  --sunken: #ecefec;
+  --raised: #ffffff;
+  --ink: #101210;
+  --ink-2: #4b4f4b;
+  --muted: #83887f;
+  --grid: #e0e3df;
+  --axis: #c2c6bf;
+  --hair: rgba(16, 18, 16, 0.09);
 
   --accent: #2a78d6;
-  --accent-soft: #cde2fb;
+  --accent-ink: #1c5cab;
   --good: #0ca30c;
-  --warning: #fab219;
-  --critical: #d03b3b;
+  --warn: #fab219;
+  --crit: #d03b3b;
 
   --c1: #2a78d6;
   --c2: #eb6834;
@@ -38,31 +41,27 @@
   --c6: #008300;
   --c7: #4a3aa7;
 
-  /* sequential blue ramp, used for magnitude fills */
-  --seq-100: #cde2fb;
-  --seq-250: #86b6ef;
-  --seq-400: #3987e5;
-  --seq-550: #1c5cab;
+  --shadow-card: 0 1px 2px rgba(16, 18, 16, 0.04);
+  --shadow-pop: 0 8px 24px rgba(16, 18, 16, 0.12);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
     color-scheme: dark;
 
-    --page: #0d0d0d;
-    --surface: #1a1a19;
-    --surface-sunken: #131312;
-    --ink: #ffffff;
-    --ink-2: #c3c2b7;
-    --muted: #898781;
-    --grid: #2c2c2a;
-    --axis: #383835;
-    --border: rgba(255, 255, 255, 0.1);
-    --ring: rgba(255, 255, 255, 0.06);
+    --page: #0b0d0b;
+    --surface: #161815;
+    --sunken: #1e211d;
+    --raised: #22251f;
+    --ink: #f4f6f2;
+    --ink-2: #b9bfb4;
+    --muted: #7f857b;
+    --grid: #262a24;
+    --axis: #353a32;
+    --hair: rgba(244, 246, 242, 0.1);
 
     --accent: #3987e5;
-    --accent-soft: #184f95;
-    --good: #0ca30c;
+    --accent-ink: #86b6ef;
 
     --c1: #3987e5;
     --c2: #d95926;
@@ -72,30 +71,27 @@
     --c6: #008300;
     --c7: #9085e9;
 
-    --seq-100: #184f95;
-    --seq-250: #256abf;
-    --seq-400: #3987e5;
-    --seq-550: #86b6ef;
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-pop: 0 8px 24px rgba(0, 0, 0, 0.55);
   }
 }
 
 :root[data-theme='dark'] {
   color-scheme: dark;
 
-  --page: #0d0d0d;
-  --surface: #1a1a19;
-  --surface-sunken: #131312;
-  --ink: #ffffff;
-  --ink-2: #c3c2b7;
-  --muted: #898781;
-  --grid: #2c2c2a;
-  --axis: #383835;
-  --border: rgba(255, 255, 255, 0.1);
-  --ring: rgba(255, 255, 255, 0.06);
+  --page: #0b0d0b;
+  --surface: #161815;
+  --sunken: #1e211d;
+  --raised: #22251f;
+  --ink: #f4f6f2;
+  --ink-2: #b9bfb4;
+  --muted: #7f857b;
+  --grid: #262a24;
+  --axis: #353a32;
+  --hair: rgba(244, 246, 242, 0.1);
 
   --accent: #3987e5;
-  --accent-soft: #184f95;
-  --good: #0ca30c;
+  --accent-ink: #86b6ef;
 
   --c1: #3987e5;
   --c2: #d95926;
@@ -105,27 +101,25 @@
   --c6: #008300;
   --c7: #9085e9;
 
-  --seq-100: #184f95;
-  --seq-250: #256abf;
-  --seq-400: #3987e5;
-  --seq-550: #86b6ef;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-pop: 0 8px 24px rgba(0, 0, 0, 0.55);
 }
 
 @theme inline {
   --color-page: var(--page);
   --color-surface: var(--surface);
-  --color-sunken: var(--surface-sunken);
+  --color-sunken: var(--sunken);
+  --color-raised: var(--raised);
   --color-ink: var(--ink);
   --color-ink2: var(--ink-2);
   --color-muted: var(--muted);
   --color-grid: var(--grid);
   --color-axis: var(--axis);
-  --color-hair: var(--border);
+  --color-hair: var(--hair);
   --color-accent: var(--accent);
-  --color-accent-soft: var(--accent-soft);
   --color-good: var(--good);
-  --color-warning: var(--warning);
-  --color-critical: var(--critical);
+  --color-warn: var(--warn);
+  --color-crit: var(--crit);
 
   --font-sans:
     system-ui, -apple-system, 'Segoe UI', 'Pretendard', 'Apple SD Gothic Neo', 'Noto Sans KR',
@@ -139,14 +133,15 @@ body,
 }
 
 body {
+  margin: 0;
   background: var(--page);
   color: var(--ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  /* 홈 화면 앱으로 띄웠을 때 바운스 스크롤이 웹처럼 보이지 않게 */
   overscroll-behavior-y: none;
 }
 
-/* Native controls inherit the app surface instead of the UA default. */
 input,
 textarea,
 select,
@@ -162,10 +157,10 @@ button {
 *:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
-  border-radius: 6px;
+  border-radius: 8px;
 }
 
-/* Numbers that align vertically (axis ticks, table rows, grid counts) only. */
+/* 세로로 자릿수가 맞아야 하는 곳에만 */
 .tnum {
   font-variant-numeric: tabular-nums;
 }
@@ -175,6 +170,48 @@ button {
 }
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
+}
+
+/* 홈 화면 앱에서 노치·홈 인디케이터를 피한다 */
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@keyframes xp-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(4px) scale(0.9);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-6px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-22px) scale(1);
+  }
+}
+
+.animate-xp {
+  animation: xp-pop 1.1s ease-out forwards;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-rise {
+  animation: rise 0.28s ease-out both;
 }
 
 @media (prefers-reduced-motion: reduce) {

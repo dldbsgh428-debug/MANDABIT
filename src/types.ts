@@ -1,41 +1,49 @@
-/** 아비투스를 이루는 7가지 자본. 습관·계획·회고가 모두 이 축에 매달린다. */
+/** 아비투스를 이루는 7가지 자본. 앱의 모든 것이 이 축에 매달린다. */
 export type CapitalId =
   | 'psych'
-  | 'culture'
+  | 'body'
   | 'knowledge'
   | 'economy'
-  | 'body'
-  | 'language'
+  | 'culture'
   | 'social'
+  | 'language'
 
 export interface Capital {
   id: CapitalId
   name: string
+  /** 좁은 줄에서 쓰는 두 글자 이름 */
+  short: string
+  /** 이 자본이 커지면 무엇이 달라지는가 */
   tagline: string
-  /** 이 자본이 자라는 방식 — 습관을 만들 때 보여주는 힌트 */
-  hint: string
+  /** 무엇을 하면 자라는가 — 행동을 만들 때 보여주는 힌트 */
+  grows: string
   emoji: string
-  /** var(--c1)…var(--c7) 중 하나. 검증된 7슬롯 categorical 팔레트. */
+  /** var(--c1)…var(--c7). 색각 이상 검증을 마친 7슬롯 팔레트와 1:1. */
   cssVar: string
 }
 
 /** 0=일요일 … 6=토요일 */
 export type Weekday = 0 | 1 | 2 | 3 | 4 | 5 | 6
 
-export interface Habit {
+/** 행동의 무게. 깊게 한 일이 더 많이 쌓이는 게 자연스럽다. */
+export type Weight = 'light' | 'normal' | 'deep'
+
+/** 자본을 늘리는 행동. 체크박스가 아니라 '경험치를 주는 행위'다. */
+export interface Action {
   id: string
-  name: string
+  title: string
   capital: CapitalId
+  weight: Weight
   /** 실행할 요일. 빈 배열이면 매일. */
   days: Weekday[]
-  /** 언제 할지에 대한 힌트 — 타임블록으로 끌어올 때 쓴다 */
+  /** 언제/어디서 할지 — 계획에 끌어올 때 쓰는 힌트 */
   cue?: string
   archived?: boolean
   createdAt: string
   order: number
 }
 
-export interface TimeBlock {
+export interface PlanBlock {
   id: string
   /** 'HH:MM' */
   start: string
@@ -45,42 +53,27 @@ export interface TimeBlock {
   done: boolean
 }
 
-/** 오늘 컨디션 — 이모지 하나로 남기면 한 달 상태가 보인다 */
-export type Condition = 1 | 2 | 3 | 4 | 5
+/** 하루 컨디션 */
+export type Mood = 1 | 2 | 3 | 4 | 5
 
-export interface DayEntry {
+export interface DayLog {
   /** 'YYYY-MM-DD' */
   date: string
-  /** 완료한 습관 id 목록 */
+  /** 그날 완료한 행동 id */
   done: string[]
-  blocks: TimeBlock[]
-  condition?: Condition
-  /** 그날의 만트라 (아침 선언) */
-  mantra?: string
-  /** 저녁 회고 3줄 */
-  kept?: string
-  learned?: string
-  tomorrow?: string
-  memo?: string
-}
-
-export interface MonthReview {
-  /** 'YYYY-MM' */
-  month: string
-  keep: string
-  drop: string
-  next: string
+  blocks: PlanBlock[]
+  mood?: Mood
+  note?: string
 }
 
 export type ThemePref = 'system' | 'light' | 'dark'
 
 export interface AppState {
   version: number
-  habits: Habit[]
-  entries: Record<string, DayEntry>
-  reviews: Record<string, MonthReview>
-  /** 사용자가 고정해 둔 만트라. 비어 있으면 프리셋에서 날짜별로 고른다. */
-  pinnedMantra: string
+  actions: Action[]
+  logs: Record<string, DayLog>
   theme: ThemePref
+  /** 사용자가 마지막으로 본 레벨 — 레벨업 축하를 한 번만 띄우기 위해 */
+  seenLevels: Partial<Record<CapitalId, number>>
   onboarded: boolean
 }
