@@ -3,7 +3,9 @@ import { useAppState } from './lib/store'
 import { Today } from './screens/Today'
 import { Capitals } from './screens/Capitals'
 import { More } from './screens/More'
+import { Plan } from './screens/Plan'
 import { Onboarding } from './screens/Onboarding'
+import { InstallPrompt } from './components/InstallPrompt'
 
 type TabId = 'today' | 'capitals' | 'plan' | 'more'
 
@@ -43,21 +45,14 @@ export default function App() {
       </header>
 
       <main className="flex-1 px-4 pt-3 pb-28">
-        {tab === 'today' ? <Today /> : null}
-        {tab === 'capitals' ? <Capitals /> : null}
-        {tab === 'plan' ? (
+        {tab === 'today' ? (
           <div className="space-y-3">
-            <header className="px-1 pt-1">
-              <h1 className="text-[22px] font-semibold tracking-tight text-ink">계획</h1>
-            </header>
-            <div className="rounded-2xl bg-surface px-5 py-10 text-center ring-1 ring-hair">
-              <p className="text-sm font-medium text-ink">다음 단계에서 만듭니다</p>
-              <p className="mx-auto mt-1.5 max-w-xs text-xs leading-relaxed text-muted">
-                시간 블록에 자본을 배분하는 하루 계획표와 주간 보기가 들어갑니다.
-              </p>
-            </div>
+            <InstallPrompt />
+            <Today />
           </div>
         ) : null}
+        {tab === 'capitals' ? <Capitals /> : null}
+        {tab === 'plan' ? <Plan /> : null}
         {tab === 'more' ? <More /> : null}
       </main>
 
