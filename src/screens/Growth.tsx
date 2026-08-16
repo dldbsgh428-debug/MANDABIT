@@ -150,7 +150,7 @@ export function Growth() {
       <header className="px-1 pt-1">
         <h1 className="text-[22px] font-semibold tracking-tight text-ink">성장</h1>
         <p className="mt-0.5 text-[12px] leading-relaxed text-muted">
-          레벨은 쌓은 것, 불씨는 지금. 레벨은 쉬어도 내려가지 않습니다.
+          레벨은 쌓은 것, 불씨는 최근 한 주. 레벨은 쉬어도 내려가지 않습니다.
         </p>
       </header>
 
@@ -263,15 +263,19 @@ export function Growth() {
             <span className="font-medium text-ink">가볍게 10 · 보통 20 · 깊게 35</span>.
           </p>
           <p>
-            연속으로 이어가면 하루마다 3%씩 더 받고, 14일째에 최대{' '}
+            첫날은 그대로, 이어간 날부터 하루 3%씩 붙어 15일째에 최대{' '}
             <span className="font-medium text-ink">1.42배</span>가 됩니다.
           </p>
           <p className="tnum">
             레벨 1→2는 {xpToNext(1)} XP, 2→3은 {xpToNext(2)} XP… 뒤로 갈수록 40씩 늘어납니다.
           </p>
           <p>
-            <span className="font-medium text-ink">레벨은 내려가지 않습니다.</span> 대신 최근 14일
+            <span className="font-medium text-ink">레벨은 내려가지 않습니다.</span> 대신 최근 한 주
             활동으로 계산하는 불씨가 식습니다. 쌓은 건 남고, 지금 상태는 따로 보입니다.
+          </p>
+          <p>
+            같은 경험치가 <span className="font-medium text-ink">여유</span>로도 들어옵니다. 여유는
+            보상으로 바꿔 써도 레벨은 그대로입니다 — 쌓은 것과 쓰는 것은 별개입니다.
           </p>
         </div>
       </Card>

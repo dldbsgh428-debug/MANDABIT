@@ -1,21 +1,24 @@
 import { useEffect, useState } from 'react'
 import { todayKey } from './lib/date'
-import { capitalGrowth } from './lib/growth'
+import { balanceXp, capitalGrowth } from './lib/growth'
 import { markLevelSeen, useAppState } from './lib/store'
 import { Today } from './screens/Today'
 import { Growth } from './screens/Growth'
+import { Rewards } from './screens/Rewards'
+import { More } from './screens/More'
+import { Onboarding } from './screens/Onboarding'
 import type { CapitalId } from './types'
 
-type TabId = 'today' | 'growth' | 'plan' | 'more'
+type TabId = 'today' | 'growth' | 'rewards' | 'plan' | 'more'
 
 const TABS: { id: TabId; label: string; icon: string }[] = [
   { id: 'today', label: '오늘', icon: '◎' },
   { id: 'growth', label: '성장', icon: '◈' },
+  { id: 'rewards', label: '보상', icon: '◇' },
   { id: 'plan', label: '계획', icon: '▤' },
   { id: 'more', label: '더보기', icon: '⋯' },
 ]
 
-/** 레벨이 오른 순간 한 번만 뜨는 축하 */
 function LevelUpToast({
   name,
   emoji,
@@ -37,7 +40,7 @@ function LevelUpToast({
   return (
     <div
       role="status"
-      className="animate-rise pointer-events-auto fixed inset-x-4 bottom-24 z-50 mx-auto max-w-sm rounded-2xl bg-raised px-4 py-3 shadow-[var(--shadow-pop)] ring-1 ring-hair"
+      className="animate-rise fixed inset-x-4 bottom-24 z-50 mx-auto max-w-sm rounded-2xl bg-raised px-4 py-3 shadow-[var(--shadow-pop)] ring-1 ring-hair"
     >
       <div className="flex items-center gap-3">
         <span
@@ -66,20 +69,6 @@ function LevelUpToast({
   )
 }
 
-function Placeholder({ title, body }: { title: string; body: string }) {
-  return (
-    <div className="space-y-3">
-      <header className="px-1 pt-1">
-        <h1 className="text-[22px] font-semibold tracking-tight text-ink">{title}</h1>
-      </header>
-      <div className="rounded-2xl bg-surface px-5 py-10 text-center ring-1 ring-hair">
-        <p className="text-sm font-medium text-ink">다음 단계에서 만듭니다</p>
-        <p className="mx-auto mt-1.5 max-w-xs text-xs leading-relaxed text-muted">{body}</p>
-      </div>
-    </div>
-  )
-}
-
 export default function App() {
   const state = useAppState()
   const [tab, setTab] = useState<TabId>('today')
@@ -100,24 +89,22 @@ export default function App() {
 
   // 레벨이 저장된 '본 레벨'을 넘어서면 축하를 한 번 띄운다.
   useEffect(() => {
+    if (!state.onboarded) return
     const growth = capitalGrowth(state, todayKey())
     for (const g of growth) {
       const seen = state.seenLevels[g.id] ?? 1
       if (g.level > seen) {
-        setCelebrate({
-          id: g.id,
-          name: g.name,
-          emoji: g.emoji,
-          level: g.level,
-          color: `var(${g.cssVar})`,
-        })
+        setCelebrate({ id: g.id, name: g.name, emoji: g.emoji, level: g.level, color: `var(${g.cssVar})` })
         markLevelSeen(g.id, g.level)
         break
       }
-      // 기록을 지워 레벨이 내려간 경우 기준을 맞춰 둔다.
       if (g.level < seen) markLevelSeen(g.id, g.level)
     }
   }, [state])
+
+  if (!state.onboarded) return <Onboarding />
+
+  const balance = balanceXp(state)
 
   return (
     <div className="mx-auto flex min-h-full max-w-2xl flex-col">
@@ -131,24 +118,36 @@ export default function App() {
             H
           </span>
           <span className="text-[12px] font-bold tracking-[0.18em] text-ink">HABITUS</span>
+
+          {/* 잔고는 늘 보이게 — 쓸 수 있다는 걸 잊지 않도록 */}
+          <button
+            type="button"
+            onClick={() => setTab('rewards')}
+            className="tnum ml-auto rounded-full bg-sunken px-2.5 py-1 text-[12px] font-semibold text-ink active:opacity-80"
+          >
+            {balance} <span className="text-[10px] font-medium text-muted">여유</span>
+          </button>
         </div>
       </header>
 
       <main className="flex-1 px-4 pt-3 pb-28">
         {tab === 'today' ? <Today /> : null}
         {tab === 'growth' ? <Growth /> : null}
+        {tab === 'rewards' ? <Rewards /> : null}
         {tab === 'plan' ? (
-          <Placeholder
-            title="계획"
-            body="시간 블록에 자본을 배분하는 하루 계획표와 주간 보기가 들어갑니다."
-          />
+          <div className="space-y-3">
+            <header className="px-1 pt-1">
+              <h1 className="text-[22px] font-semibold tracking-tight text-ink">계획</h1>
+            </header>
+            <div className="rounded-2xl bg-surface px-5 py-10 text-center ring-1 ring-hair">
+              <p className="text-sm font-medium text-ink">다음 단계에서 만듭니다</p>
+              <p className="mx-auto mt-1.5 max-w-xs text-xs leading-relaxed text-muted">
+                시간 블록에 자본을 배분하는 하루 계획표와 주간 보기가 들어갑니다.
+              </p>
+            </div>
+          </div>
         ) : null}
-        {tab === 'more' ? (
-          <Placeholder
-            title="더보기"
-            body="행동 관리, 테마, 백업과 복원이 들어갑니다."
-          />
-        ) : null}
+        {tab === 'more' ? <More /> : null}
       </main>
 
       {celebrate ? (
@@ -161,7 +160,6 @@ export default function App() {
         />
       ) : null}
 
-      {/* 폰에서 엄지로 닿는 자리에 두는 탭 바 */}
       <nav
         aria-label="화면 전환"
         className="safe-bottom fixed inset-x-0 bottom-0 z-30 border-t border-hair bg-page/95 backdrop-blur-md"

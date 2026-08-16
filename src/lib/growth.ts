@@ -40,8 +40,8 @@ export const WEIGHT_HINT: Record<Weight, string> = {
 const STREAK_CAP = 14
 const STREAK_STEP = 0.03
 
-/** 불씨를 계산하는 창 */
-const VITALITY_WINDOW = 14
+/** 불씨를 계산하는 창. 한 주 쉬면 눈에 보이게 식는다. */
+export const VITALITY_WINDOW = 7
 
 /**
  * 레벨 L에서 L+1로 가는 데 필요한 경험치.
@@ -111,8 +111,12 @@ export function streakAt(state: AppState, action: Action, date: string): number 
   return streak
 }
 
+/**
+ * 첫날은 배수가 붙지 않는다 (1.0배). 이어간 날부터 3%씩 붙어
+ * 15일째에 1.42배에서 멈춘다.
+ */
 export function streakMultiplier(streak: number): number {
-  return 1 + Math.min(streak, STREAK_CAP) * STREAK_STEP
+  return 1 + Math.min(Math.max(streak - 1, 0), STREAK_CAP) * STREAK_STEP
 }
 
 /** 이 행동을 오늘 하면 몇 점을 받는가 (연속 보너스 포함) */
@@ -194,7 +198,7 @@ export const totalXpByCapital = memoByState((state: AppState): Record<CapitalId,
 })
 
 /**
- * 불씨 — 최근 14일 동안 그 자본에서 얻은 경험치를, 같은 기간에 '다 했다면'
+ * 불씨 — 최근 한 주 동안 그 자본에서 얻은 경험치를, 같은 기간에 '다 했다면'
  * 받았을 경험치로 나눈 값(0~1). 예정된 행동이 없는 자본은 0.
  */
 export function vitalityOf(
@@ -312,14 +316,50 @@ export function coolingCapital(growth: CapitalGrowth[]): CapitalGrowth | null {
   return [...candidates].sort((a, b) => a.vitality - b.vitality)[0]
 }
 
-/** 전체 연속 기록일 — 무엇이든 하나라도 한 날이 이어진 수 */
+/* ------------------------------------------------------------- 여유(잔고)
+
+   레벨을 만드는 누적 경험치와, 실제로 써 없어지는 잔고를 나눈다.
+   행동 하나를 하면 같은 양이 양쪽에 들어오고, 보상을 바꿀 때는 잔고에서만
+   빠진다. 그래야 보상을 써도 지금까지 쌓은 레벨이 깎이지 않는다.
+------------------------------------------------------------------------- */
+
+/** 지금까지 번 총 경험치 (레벨의 근거) */
+export function lifetimeXp(state: AppState): number {
+  const totals = totalXpByCapital(state)
+  return CAPITALS.reduce((sum, c) => sum + totals[c.id], 0)
+}
+
+/** 보상으로 바꿔 쓴 총량 */
+export function spentXp(state: AppState): number {
+  return state.purchases.reduce((sum, p) => sum + p.cost, 0)
+}
+
+/** 지금 쓸 수 있는 여유 */
+export function balanceXp(state: AppState): number {
+  return lifetimeXp(state) - spentXp(state)
+}
+
+/** 휴식권을 쓴 날인가 */
+export function isRestDay(state: AppState, date: string): boolean {
+  return state.restDays.includes(date)
+}
+
+/**
+ * 전체 연속 기록일 — 무엇이든 하나라도 한 날이 이어진 수.
+ * 휴식권을 쓴 날은 쉬어도 연속을 끊지 않고 건너뛴다.
+ */
 export function overallStreak(state: AppState, today = todayKey()): number {
   let streak = 0
   let cursor = today
   // 오늘 아직 아무것도 안 했으면 어제부터 센다.
-  if (dayXp(state, cursor) === 0) cursor = addDays(cursor, -1)
+  if (dayXp(state, cursor) === 0 && !isRestDay(state, cursor)) cursor = addDays(cursor, -1)
   for (let i = 0; i < 800; i++) {
-    if (dayXp(state, cursor) === 0) break
+    if (dayXp(state, cursor) === 0) {
+      if (!isRestDay(state, cursor)) break
+      // 휴식권을 쓴 날은 세지 않되 흐름은 잇는다.
+      cursor = addDays(cursor, -1)
+      continue
+    }
     streak++
     cursor = addDays(cursor, -1)
   }

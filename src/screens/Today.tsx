@@ -9,6 +9,7 @@ import {
   coolingCapital,
   didDo,
   habitusIndex,
+  isRestDay,
   overallStreak,
   streakAt,
   todayProgress,
@@ -92,6 +93,7 @@ export function Today() {
   const index = habitusIndex(growth)
   const streak = overallStreak(state, date)
   const cooling = coolingCapital(growth)
+  const resting = isRestDay(state, date)
 
   // 방금 얻은 경험치를 잠깐 띄운다
   const [pop, setPop] = useState<{ id: string; xp: number } | null>(null)
@@ -155,7 +157,19 @@ export function Today() {
         </div>
       </Card>
 
-      {cooling ? (
+      {resting ? (
+        <div className="animate-rise flex items-start gap-2.5 rounded-2xl bg-sunken px-4 py-3">
+          <span aria-hidden className="text-[15px] leading-tight">
+            🛌
+          </span>
+          <p className="text-[12px] leading-relaxed text-ink2">
+            오늘은 <span className="font-medium text-ink">휴식권</span>을 쓰는 날이에요. 아무것도 하지
+            않아도 연속 기록은 지켜집니다.
+          </p>
+        </div>
+      ) : null}
+
+      {cooling && !resting ? (
         <div className="animate-rise flex items-start gap-2.5 rounded-2xl bg-sunken px-4 py-3">
           <span aria-hidden className="text-[15px] leading-tight">
             {cooling.emoji}
