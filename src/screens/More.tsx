@@ -14,8 +14,8 @@ import {
   updateAction,
   useAppState,
 } from '../lib/store'
-import { ALL_WEEKDAYS, WEIGHT_HINT, WEIGHT_LABEL, WEIGHT_XP, capitalGrowth } from '../lib/growth'
-import type { Action, CapitalId, ThemePref, Weekday, Weight } from '../types'
+import { ALL_WEEKDAYS, capitalStats } from '../lib/stats'
+import type { Action, CapitalId, ThemePref, Weekday } from '../types'
 import { Button, Card, CardHead, Empty, Field, TextInput } from '../components/ui'
 
 function DayPicker({ value, onChange }: { value: Weekday[]; onChange: (v: Weekday[]) => void }) {
@@ -52,12 +52,11 @@ function DayPicker({ value, onChange }: { value: Weekday[]; onChange: (v: Weekda
 interface Draft {
   title: string
   capital: CapitalId
-  weight: Weight
   cue: string
   days: Weekday[]
 }
 
-const emptyDraft: Draft = { title: '', capital: 'psych', weight: 'normal', cue: '', days: [] }
+const emptyDraft: Draft = { title: '', capital: 'psych', cue: '', days: [] }
 
 function ActionForm({
   initial,
@@ -111,26 +110,6 @@ function ActionForm({
         </div>
       </Field>
 
-      <Field label="무게" hint={WEIGHT_HINT[draft.weight]}>
-        <div className="flex gap-1.5">
-          {(['light', 'normal', 'deep'] as Weight[]).map((w) => (
-            <button
-              key={w}
-              type="button"
-              aria-pressed={draft.weight === w}
-              onClick={() => setDraft({ ...draft, weight: w })}
-              className={`min-h-10 flex-1 rounded-xl text-[12px] transition-colors ${
-                draft.weight === w
-                  ? 'bg-surface text-ink ring-2 ring-[var(--accent)]'
-                  : 'bg-surface text-muted ring-1 ring-hair'
-              }`}
-            >
-              {WEIGHT_LABEL[w]} · {WEIGHT_XP[w]}
-            </button>
-          ))}
-        </div>
-      </Field>
-
       <Field label="언제 하나요? (선택)">
         <TextInput
           value={draft.cue}
@@ -167,7 +146,6 @@ function ActionRow({ action }: { action: Action }) {
           initial={{
             title: action.title,
             capital: action.capital,
-            weight: action.weight,
             cue: action.cue ?? '',
             days: action.days,
           }}
@@ -177,7 +155,6 @@ function ActionRow({ action }: { action: Action }) {
             updateAction(action.id, {
               title: d.title.trim(),
               capital: d.capital,
-              weight: d.weight,
               cue: d.cue.trim(),
               days: d.days,
             })
@@ -201,14 +178,11 @@ function ActionRow({ action }: { action: Action }) {
             {action.title}
           </p>
           <p className="mt-0.5 truncate text-[11px] text-muted">
-            {capital(action.capital).short} · {WEIGHT_LABEL[action.weight]} ·{' '}
+            {capital(action.capital).short} ·{' '}
             {action.days.length === 0 ? '매일' : action.days.map((d) => WEEKDAY_LABELS[d]).join('·')}
             {action.cue ? ` · ${action.cue}` : ''}
           </p>
         </div>
-        <span className="tnum shrink-0 text-[12px] font-medium text-ink2">
-          +{WEIGHT_XP[action.weight]}
-        </span>
       </div>
 
       <div className="mt-1.5 flex gap-0.5 pl-4">
@@ -281,8 +255,8 @@ export function More() {
   const sorted = [...state.actions].sort((a, b) => a.order - b.order)
   const live = sorted.filter((a) => !a.archived)
   const archived = sorted.filter((a) => a.archived)
-  const growth = capitalGrowth(state, todayKey())
-  const empty = growth.filter((g) => g.actionCount === 0)
+  const stats = capitalStats(state, todayKey())
+  const empty = stats.filter((s) => s.actionCount === 0)
 
   function download() {
     const blob = new Blob([exportJson()], { type: 'application/json' })
@@ -309,7 +283,7 @@ export function More() {
       <Card>
         <CardHead
           title={`행동 ${live.length}개`}
-          hint="무게가 곧 경험치입니다. 자주 못 할 일은 요일을 줄이세요."
+          hint="자주 못 할 일은 요일을 줄이세요. 지킬 수 있는 크기가 중요합니다."
           action={
             <Button size="sm" variant="solid" onClick={() => setAdding((v) => !v)}>
               + 행동
@@ -327,7 +301,6 @@ export function More() {
                 addAction({
                   title: d.title.trim(),
                   capital: d.capital,
-                  weight: d.weight,
                   cue: d.cue.trim(),
                   days: d.days,
                 })
@@ -353,14 +326,14 @@ export function More() {
             <span className="font-medium text-ink">
               {empty.map((g) => `${g.emoji} ${g.name}`).join(' · ')}
             </span>
-            . 이 자본들은 레벨 1에 멈춰 있어 아비투스 지수를 끌어내립니다.
+            . 이 자본들은 기록에 잡히지 않습니다.
           </p>
         ) : null}
       </Card>
 
       {archived.length ? (
         <Card>
-          <CardHead title={`보관 ${archived.length}개`} hint="쌓은 경험치는 남고 오늘 목록에서만 빠집니다" />
+          <CardHead title={`보관 ${archived.length}개`} hint="기록은 남고 오늘 목록에서만 빠집니다" />
           <ul className="px-1 pb-2">
             {archived.map((a) => (
               <ActionRow key={a.id} action={a} />
@@ -438,7 +411,7 @@ export function More() {
       </Card>
 
       <Card>
-        <CardHead title="전체 초기화" hint="행동·기록·보상·레벨이 모두 지워집니다. 되돌릴 수 없습니다." />
+        <CardHead title="전체 초기화" hint="행동과 기록이 모두 지워집니다. 되돌릴 수 없습니다." />
         <div className="flex flex-wrap gap-2 px-4 pb-4">
           {confirmReset ? (
             <>

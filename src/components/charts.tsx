@@ -39,8 +39,8 @@ const CURVE_PAD = { top: 12, right: 12, bottom: 18, left: 34 }
 const CURVE_H = 150
 
 /**
- * 누적 경험치 곡선. 단조 증가하는 값이라 오르내림이 아니라 '기울기'가 정보다 —
- * 평평하면 그 기간에 아무것도 안 쌓았다는 뜻.
+ * 누적 곡선. 단조 증가하는 값이라 오르내림이 아니라 '기울기'가 정보다 —
+ * 평평하면 그 기간에 아무것도 쌓지 않았다는 뜻.
  */
 export function GrowthCurve({ points, color = 'var(--accent)' }: { points: CurvePoint[]; color?: string }) {
   const { ref, width } = useWidth<HTMLDivElement>()
@@ -70,7 +70,7 @@ export function GrowthCurve({ points, color = 'var(--accent)' }: { points: Curve
           width={width}
           height={CURVE_H}
           role="img"
-          aria-label="누적 경험치 성장 곡선"
+          aria-label="누적 실천 횟수 곡선"
           onMouseMove={(e) => pick(e.clientX, e.currentTarget.getBoundingClientRect())}
           onMouseLeave={() => setHover(null)}
           onTouchStart={(e) => pick(e.touches[0].clientX, e.currentTarget.getBoundingClientRect())}
@@ -181,7 +181,7 @@ export function Columns({ data, unit = '' }: { data: ColumnDatum[]; unit?: strin
   return (
     <div ref={ref} className="relative px-4 pb-1">
       {width > 0 ? (
-        <svg width={width} height={COL_H} role="img" aria-label="요일별 평균 경험치">
+        <svg width={width} height={COL_H} role="img" aria-label="요일별 평균 달성률">
           {[0, 0.5, 1].map((t) => (
             <g key={t}>
               <line

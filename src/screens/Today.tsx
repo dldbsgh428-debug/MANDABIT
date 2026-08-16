@@ -1,33 +1,27 @@
-import { useState } from 'react'
 import { capital, capitalColor } from '../data/capitals'
 import { MOODS } from '../data/presets'
 import { formatDay, greeting, todayKey } from '../lib/date'
 import { logFor, setMood, setNote, toggleAction, useAppState } from '../lib/store'
 import {
-  WEIGHT_LABEL,
-  capitalGrowth,
-  coolingCapital,
+  actionStreak,
+  capitalStats,
   didDo,
-  habitusIndex,
-  isRestDay,
   overallStreak,
-  streakAt,
+  pct,
+  quietestCapital,
   todayProgress,
-  xpPreview,
-} from '../lib/growth'
+} from '../lib/stats'
 import type { Action, Mood } from '../types'
 import { Bar, Card, CardHead, Empty, TextArea } from '../components/ui'
 
 function ActionRow({
   action,
   done,
-  xp,
   streak,
   onToggle,
 }: {
   action: Action
   done: boolean
-  xp: number
   streak: number
   onToggle: () => void
 }) {
@@ -66,20 +60,16 @@ function ActionRow({
             <span aria-hidden className="size-1.5 rounded-full" style={{ background: color }} />
             {capital(action.capital).short}
           </span>
-          <span>{WEIGHT_LABEL[action.weight]}</span>
-          {action.cue ? <span>· {action.cue}</span> : null}
-          {streak > 1 ? <span className="text-ink2">🔥 {streak}일째</span> : null}
+          {action.cue ? <span>{action.cue}</span> : null}
+          {streak > 1 ? <span className="text-ink2">{streak}일째</span> : null}
         </span>
       </span>
 
       <span
-        className={`tnum shrink-0 rounded-lg px-2 py-1 text-[12px] font-semibold ${
-          done ? 'text-muted' : 'text-ink'
-        }`}
-        style={done ? undefined : { background: 'var(--sunken)' }}
-      >
-        +{xp}
-      </span>
+        aria-hidden
+        className="h-7 w-1 shrink-0 rounded-full"
+        style={{ background: color, opacity: done ? 1 : 0.25 }}
+      />
     </button>
   )
 }
@@ -89,23 +79,9 @@ export function Today() {
   const date = todayKey()
   const log = logFor(date)
   const progress = todayProgress(state, date)
-  const growth = capitalGrowth(state, date)
-  const index = habitusIndex(growth)
+  const stats = capitalStats(state, date)
   const streak = overallStreak(state, date)
-  const cooling = coolingCapital(growth)
-  const resting = isRestDay(state, date)
-
-  // 방금 얻은 경험치를 잠깐 띄운다
-  const [pop, setPop] = useState<{ id: string; xp: number } | null>(null)
-
-  function handleToggle(action: Action) {
-    const wasDone = didDo(state, date, action.id)
-    if (!wasDone) {
-      setPop({ id: action.id, xp: xpPreview(state, action, date) })
-      window.setTimeout(() => setPop(null), 1100)
-    }
-    toggleAction(date, action.id)
-  }
+  const quiet = quietestCapital(stats)
 
   const sorted = [...progress.planned].sort((a, b) => {
     const da = didDo(state, date, a.id) ? 1 : 0
@@ -114,6 +90,13 @@ export function Today() {
     return a.order - b.order
   })
 
+  // 오늘 실천한 것이 어느 자본에 들어갔는지
+  const touched = stats.filter((s) =>
+    state.actions.some(
+      (a) => a.capital === s.id && !a.archived && didDo(state, date, a.id),
+    ),
+  )
+
   return (
     <div className="space-y-3">
       <header className="px-1 pt-1">
@@ -121,100 +104,74 @@ export function Today() {
         <h1 className="mt-0.5 text-[22px] font-semibold tracking-tight text-ink">{formatDay(date)}</h1>
       </header>
 
-      {/* 오늘 쌓은 것 — 이 화면의 주인공 */}
-      <Card className="overflow-hidden">
+      <Card>
         <div className="px-4 pt-4 pb-4">
-          <div className="flex items-end justify-between gap-3">
-            <div>
-              <p className="text-[11px] font-medium text-muted">오늘 쌓은 경험치</p>
-              <p className="mt-1 flex items-baseline gap-1">
-                <span className="text-[38px] leading-none font-semibold tracking-tight text-ink">
-                  {progress.earned}
-                </span>
-                <span className="text-[13px] font-medium text-ink2">
-                  / {progress.possible} XP
-                </span>
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-[11px] font-medium text-muted">아비투스 지수</p>
-              <p className="mt-1 text-[26px] leading-none font-semibold tracking-tight text-ink">
-                {index}
-              </p>
-            </div>
-          </div>
+          <p className="text-[11px] font-medium text-muted">오늘</p>
+          <p className="mt-1 flex items-baseline gap-1.5">
+            <span className="tnum text-[38px] leading-none font-semibold tracking-tight text-ink">
+              {progress.doneCount}
+            </span>
+            <span className="text-[14px] font-medium text-ink2">/ {progress.totalCount}</span>
+          </p>
 
           <div className="mt-3">
-            <Bar value={progress.possible ? progress.earned / progress.possible : 0} height={8} />
+            <Bar value={progress.rate.value} height={8} />
           </div>
 
           <div className="mt-2.5 flex items-center justify-between text-[11px] text-muted">
-            <span>
-              {progress.doneCount} / {progress.totalCount}개 완료
-            </span>
-            <span>{streak > 0 ? `🔥 ${streak}일 연속` : '오늘 다시 시작'}</span>
+            <span>{pct(progress.rate)}% 실천</span>
+            <span>{streak > 0 ? `${streak}일 연속 기록 중` : '오늘 다시 시작'}</span>
           </div>
+
+          {touched.length > 0 ? (
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {touched.map((s) => (
+                <span
+                  key={s.id}
+                  className="inline-flex items-center gap-1 rounded-full bg-sunken px-2 py-0.5 text-[10.5px] text-ink2"
+                >
+                  <span
+                    aria-hidden
+                    className="size-1.5 rounded-full"
+                    style={{ background: `var(${s.cssVar})` }}
+                  />
+                  {s.name}
+                </span>
+              ))}
+            </div>
+          ) : null}
         </div>
       </Card>
 
-      {resting ? (
-        <div className="animate-rise flex items-start gap-2.5 rounded-2xl bg-sunken px-4 py-3">
+      {quiet ? (
+        <div className="flex items-start gap-2.5 rounded-2xl bg-sunken px-4 py-3">
           <span aria-hidden className="text-[15px] leading-tight">
-            🛌
+            {quiet.emoji}
           </span>
           <p className="text-[12px] leading-relaxed text-ink2">
-            오늘은 <span className="font-medium text-ink">휴식권</span>을 쓰는 날이에요. 아무것도 하지
-            않아도 연속 기록은 지켜집니다.
-          </p>
-        </div>
-      ) : null}
-
-      {cooling && !resting ? (
-        <div className="animate-rise flex items-start gap-2.5 rounded-2xl bg-sunken px-4 py-3">
-          <span aria-hidden className="text-[15px] leading-tight">
-            {cooling.emoji}
-          </span>
-          <p className="text-[12px] leading-relaxed text-ink2">
-            <span className="font-medium text-ink">{cooling.name}</span>의 불씨가 식고 있어요
-            {cooling.daysIdle !== null ? ` (${cooling.daysIdle}일째 조용)` : ''}. 오늘 하나만 해도
-            다시 살아납니다.
+            최근 한 주 <span className="font-medium text-ink">{quiet.name}</span>에 쓴 시간이 가장
+            적었어요
+            {quiet.daysIdle !== null && quiet.daysIdle > 0 ? ` (${quiet.daysIdle}일 전이 마지막)` : ''}.
           </p>
         </div>
       ) : null}
 
       <Card>
-        <CardHead
-          title="오늘의 행동"
-          hint={
-            progress.totalCount
-              ? '누르면 경험치가 쌓입니다. 연속으로 할수록 더 많이 받아요.'
-              : undefined
-          }
-        />
+        <CardHead title="오늘 할 것" />
         {sorted.length === 0 ? (
           <Empty
-            title="오늘 예정된 행동이 없어요"
-            body="'더보기 → 행동 관리'에서 행동을 추가하거나 요일을 조정해 주세요."
+            title="오늘 예정된 것이 없어요"
+            body="'더보기'에서 행동을 추가하거나 요일을 조정해 주세요."
           />
         ) : (
-          <ul className="relative px-1 pb-2">
+          <ul className="px-1 pb-2">
             {sorted.map((action) => (
-              <li key={action.id} className="relative">
-                {pop?.id === action.id ? (
-                  <span
-                    aria-hidden
-                    className="animate-xp pointer-events-none absolute top-1 right-4 z-10 text-[13px] font-bold"
-                    style={{ color: capitalColor(action.capital) }}
-                  >
-                    +{pop.xp} XP
-                  </span>
-                ) : null}
+              <li key={action.id}>
                 <ActionRow
                   action={action}
                   done={didDo(state, date, action.id)}
-                  xp={xpPreview(state, action, date)}
-                  streak={streakAt(state, action, date)}
-                  onToggle={() => handleToggle(action)}
+                  streak={actionStreak(state, action, date)}
+                  onToggle={() => toggleAction(date, action.id)}
                 />
               </li>
             ))}
