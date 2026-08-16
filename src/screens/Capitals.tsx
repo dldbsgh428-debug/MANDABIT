@@ -14,9 +14,12 @@ import {
   weekdayRates,
   type CapitalStat,
 } from '../lib/stats'
+import type { ToolSummary } from '../lib/entries'
 import type { CapitalId } from '../types'
 import { Bar, Card, CardHead, TableView } from '../components/ui'
 import { Columns, GrowthCurve, type ColumnDatum, type CurvePoint } from '../components/charts'
+import { MoneyCard } from '../components/MoneyCard'
+import { toolSummaries } from '../lib/entries'
 
 type RangeId = '7' | '30' | '90'
 
@@ -28,10 +31,12 @@ const RANGES: { id: RangeId; label: string }[] = [
 
 function CapitalRow({
   s,
+  summaries,
   expanded,
   onToggle,
 }: {
   s: CapitalStat
+  summaries: ToolSummary[]
   expanded: boolean
   onToggle: () => void
 }) {
@@ -93,6 +98,21 @@ function CapitalRow({
               </dd>
             </div>
           </dl>
+
+          {summaries.length > 0 ? (
+            <ul className="mt-3 space-y-1.5 border-t border-[var(--grid)] pt-2.5">
+              {summaries.map((t) => (
+                <li key={t.actionId} className="flex items-baseline gap-2">
+                  <span className="min-w-0 flex-1 truncate text-[11px] text-ink2">
+                    {t.actionTitle}
+                  </span>
+                  <span className="tnum shrink-0 text-[12px] font-medium text-ink">
+                    {t.headline}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </div>
       ) : null}
     </li>
@@ -203,12 +223,15 @@ export function Capitals() {
             <CapitalRow
               key={s.id}
               s={s}
+              summaries={toolSummaries(state, s.id, days)}
               expanded={open === s.id}
               onToggle={() => setOpen(open === s.id ? null : s.id)}
             />
           ))}
         </ul>
       </Card>
+
+      <MoneyCard state={state} dates={days} rangeLabel={`최근 ${range}일`} />
 
       <Card>
         <CardHead

@@ -1,10 +1,12 @@
-import type { Action, CapitalId, Mood, PlanBlock, Weekday } from '../types'
+import type { Action, ActionTool, CapitalId, Mood, PlanBlock, Weekday } from '../types'
 
 export interface SuggestedAction {
   title: string
   capital: CapitalId
   cue?: string
   days?: Weekday[]
+  /** 이 실천을 앱 안에서 거들어 줄 도구 */
+  tool?: ActionTool
 }
 
 /**
@@ -12,34 +14,34 @@ export interface SuggestedAction {
  * 남이 정해준 행동은 오래 못 간다. 직접 쓰는 칸이 언제나 함께 있다.
  */
 export const SUGGESTED_ACTIONS: SuggestedAction[] = [
-  { title: '10분 명상하기', capital: 'psych', cue: '아침 세수 후' },
-  { title: '감사한 일 세 가지 쓰기', capital: 'psych', cue: '잠들기 전' },
-  { title: '산책하며 생각 정리', capital: 'psych', cue: '점심시간' },
+  { title: '10분 명상하기', capital: 'psych', cue: '아침 세수 후', tool: { kind: 'duration', target: 10 } },
+  { title: '감사한 일 세 가지 쓰기', capital: 'psych', cue: '잠들기 전', tool: { kind: 'text' } },
+  { title: '산책하며 생각 정리', capital: 'psych', cue: '점심시간', tool: { kind: 'duration', target: 20 } },
 
-  { title: '운동 30분', capital: 'body', cue: '퇴근 후', days: [1, 2, 3, 4, 5] },
+  { title: '운동 30분', capital: 'body', cue: '퇴근 후', days: [1, 2, 3, 4, 5], tool: { kind: 'duration', target: 30 } },
   { title: '7시간 이상 자기', capital: 'body', cue: '밤' },
-  { title: '물 2L 마시기', capital: 'body', cue: '하루 종일' },
+  { title: '물 2L 마시기', capital: 'body', cue: '하루 종일', tool: { kind: 'counter', target: 8, unit: '잔' } },
   { title: '계단으로 다니기', capital: 'body' },
 
-  { title: '책 30분 읽기', capital: 'knowledge', cue: '자기 전' },
-  { title: '읽은 것 한 문단 정리', capital: 'knowledge', cue: '주말', days: [6, 0] },
-  { title: '오늘 배운 것 한 줄 기록', capital: 'knowledge' },
+  { title: '책 30분 읽기', capital: 'knowledge', cue: '자기 전', tool: { kind: 'duration', target: 30 } },
+  { title: '읽은 것 한 문단 정리', capital: 'knowledge', cue: '주말', days: [6, 0], tool: { kind: 'text' } },
+  { title: '오늘 배운 것 한 줄 기록', capital: 'knowledge', tool: { kind: 'text' } },
 
-  { title: '가계부 3분 정리', capital: 'economy', cue: '저녁 식사 후' },
+  { title: '가계부 적기', capital: 'economy', cue: '쓸 때마다', tool: { kind: 'money' } },
   { title: '무지출 하루', capital: 'economy' },
   { title: '주간 예산 점검', capital: 'economy', cue: '일요일', days: [0] },
 
-  { title: '좋은 것 하나 감상하기', capital: 'culture', cue: '점심시간', days: [1, 3, 5] },
-  { title: '새로운 음악 한 장 듣기', capital: 'culture' },
-  { title: '전시·공연 다녀오기', capital: 'culture', cue: '주말', days: [6] },
+  { title: '좋은 것 하나 감상하기', capital: 'culture', cue: '점심시간', days: [1, 3, 5], tool: { kind: 'text' } },
+  { title: '새로운 음악 한 장 듣기', capital: 'culture', tool: { kind: 'text' } },
+  { title: '전시·공연 다녀오기', capital: 'culture', cue: '주말', days: [6], tool: { kind: 'text' } },
 
-  { title: '먼저 안부 연락하기', capital: 'social', cue: '저녁', days: [2, 6] },
-  { title: '고맙다고 표현하기', capital: 'social' },
-  { title: '누군가를 실제로 만나기', capital: 'social', days: [6] },
+  { title: '먼저 안부 연락하기', capital: 'social', cue: '저녁', days: [2, 6], tool: { kind: 'text' } },
+  { title: '고맙다고 표현하기', capital: 'social', tool: { kind: 'text' } },
+  { title: '누군가를 실제로 만나기', capital: 'social', days: [6], tool: { kind: 'text' } },
 
-  { title: '영어 문장 소리내어 읽기', capital: 'language', cue: '출근길', days: [1, 2, 3, 4, 5] },
-  { title: '오늘 있었던 일 글로 쓰기', capital: 'language', cue: '밤' },
-  { title: '새 단어 5개 외우기', capital: 'language' },
+  { title: '영어 문장 소리내어 읽기', capital: 'language', cue: '출근길', days: [1, 2, 3, 4, 5], tool: { kind: 'counter', target: 3, unit: '문장' } },
+  { title: '오늘 있었던 일 글로 쓰기', capital: 'language', cue: '밤', tool: { kind: 'text' } },
+  { title: '새 단어 5개 외우기', capital: 'language', tool: { kind: 'counter', target: 5, unit: '개' } },
 ]
 
 /** 계획 화면에서 '기본 틀 넣기'를 눌렀을 때 깔리는 하루 */
@@ -67,6 +69,7 @@ export function makeAction(s: SuggestedAction, order: number, createdAt: string)
     title: s.title,
     capital: s.capital,
     cue: s.cue,
+    tool: s.tool,
     days: s.days ?? [],
     createdAt,
     order,

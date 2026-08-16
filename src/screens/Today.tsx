@@ -1,5 +1,9 @@
+import { useState } from 'react'
 import { capital, capitalColor } from '../data/capitals'
 import { MOODS } from '../data/presets'
+import { formatMinutes, formatWon, toolMeta } from '../data/tools'
+import { entriesOn, sumOn } from '../lib/entries'
+import { ToolSheet } from '../components/ToolSheet'
 import { formatDay, greeting, todayKey } from '../lib/date'
 import { logFor, setMood, setNote, toggleAction, useAppState } from '../lib/store'
 import {
@@ -18,19 +22,23 @@ function ActionRow({
   action,
   done,
   streak,
-  onToggle,
+  progress,
+  onOpen,
 }: {
   action: Action
   done: boolean
   streak: number
-  onToggle: () => void
+  /** 도구가 붙은 행동이면 오늘 쌓인 양을 한 줄로 */
+  progress: string | null
+  onOpen: () => void
 }) {
   const color = capitalColor(action.capital)
+  const kind = action.tool?.kind ?? 'none'
 
   return (
     <button
       type="button"
-      onClick={onToggle}
+      onClick={onOpen}
       aria-pressed={done}
       className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition-colors active:bg-sunken"
     >
@@ -62,8 +70,24 @@ function ActionRow({
           </span>
           {action.cue ? <span>{action.cue}</span> : null}
           {streak > 1 ? <span className="text-ink2">{streak}일째</span> : null}
+          {progress ? (
+            <span className="tnum font-medium" style={{ color }}>
+              {progress}
+            </span>
+          ) : null}
         </span>
       </span>
+
+      {/* 도구가 붙은 행동은 눌렀을 때 무엇이 열리는지 미리 알려준다 */}
+      {kind !== 'none' ? (
+        <span
+          aria-hidden
+          className="shrink-0 rounded-lg bg-sunken px-1.5 py-1 text-[11px] text-muted"
+          title={toolMeta(kind).label}
+        >
+          {toolMeta(kind).emoji}
+        </span>
+      ) : null}
 
       <span
         aria-hidden
@@ -82,6 +106,40 @@ export function Today() {
   const stats = capitalStats(state, date)
   const streak = overallStreak(state, date)
   const quiet = quietestCapital(stats)
+
+  // 도구가 붙은 행동은 체크가 아니라 입력창을 연다
+  const [openAction, setOpenAction] = useState<Action | null>(null)
+
+  /** 오늘 이 행동으로 쌓인 것을 한 줄로. 도구가 없으면 null. */
+  function progressLabel(action: Action): string | null {
+    const kind = action.tool?.kind
+    if (!kind || kind === 'none') return null
+    const entries = entriesOn(state, date, action.id)
+    if (entries.length === 0) return null
+
+    if (kind === 'money') {
+      const out = entries
+        .filter((e) => e.direction !== 'in')
+        .reduce((s, e) => s + (e.amount ?? 0), 0)
+      return formatWon(out)
+    }
+    if (kind === 'duration') return formatMinutes(sumOn(action, entries))
+    if (kind === 'counter') {
+      const total = sumOn(action, entries)
+      const unit = action.tool?.unit ?? '회'
+      return action.tool?.target ? `${total}/${action.tool.target}${unit}` : `${total}${unit}`
+    }
+    return `${entries.length}편`
+  }
+
+  function handleOpen(action: Action) {
+    const kind = action.tool?.kind ?? 'none'
+    if (kind === 'none') {
+      toggleAction(date, action.id)
+      return
+    }
+    setOpenAction(action)
+  }
 
   const sorted = [...progress.planned].sort((a, b) => {
     const da = didDo(state, date, a.id) ? 1 : 0
@@ -171,7 +229,8 @@ export function Today() {
                   action={action}
                   done={didDo(state, date, action.id)}
                   streak={actionStreak(state, action, date)}
-                  onToggle={() => toggleAction(date, action.id)}
+                  progress={progressLabel(action)}
+                  onOpen={() => handleOpen(action)}
                 />
               </li>
             ))}
@@ -213,6 +272,10 @@ export function Today() {
           />
         </div>
       </Card>
+
+      {openAction ? (
+        <ToolSheet action={openAction} date={date} onClose={() => setOpenAction(null)} />
+      ) : null}
     </div>
   )
 }

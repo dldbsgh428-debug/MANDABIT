@@ -1,10 +1,11 @@
 import { useSyncExternalStore } from 'react'
-import type { Action, AppState, DayLog, Mood, PlanBlock, ThemePref } from '../types'
+import type { Action, AppState, DayLog, Entry, Mood, PlanBlock, ThemePref } from '../types'
 import { DEFAULT_BLOCKS } from '../data/presets'
 import { todayKey } from './date'
+import { toolSatisfied } from './entries'
 
 const KEY = 'habitus.v3'
-const VERSION = 3
+const VERSION = 4
 
 const uid = () => Math.random().toString(36).slice(2, 10)
 
@@ -17,6 +18,7 @@ function seed(): AppState {
     version: VERSION,
     actions: [],
     logs: {},
+    entries: [],
     theme: 'system',
     onboarded: false,
   }
@@ -33,6 +35,7 @@ function load(): AppState {
       version: VERSION,
       actions: Array.isArray(parsed.actions) ? parsed.actions : [],
       logs: parsed.logs && typeof parsed.logs === 'object' ? parsed.logs : {},
+      entries: Array.isArray(parsed.entries) ? parsed.entries : [],
     }
   } catch {
     return seed()
@@ -104,6 +107,45 @@ export function setNote(date: string, note: string) {
   patchLog(date, { note })
 }
 
+/* ------------------------------------------------------------ 도구 기록 */
+
+/**
+ * 기록을 넣고 빼면 그날의 완료 여부도 함께 맞춘다.
+ * 완료 상태를 log.done 한 곳에만 두어야 통계가 어긋나지 않는다.
+ */
+function syncDone(next: AppState, date: string, actionId: string): AppState {
+  const action = next.actions.find((a) => a.id === actionId)
+  if (!action || !action.tool || action.tool.kind === 'none') return next
+
+  const dayEntries = next.entries.filter((e) => e.date === date && e.actionId === actionId)
+  const satisfied = toolSatisfied(action, dayEntries)
+  const log = next.logs[date] ?? { date, done: [], blocks: [] }
+  const has = log.done.includes(actionId)
+  if (satisfied === has) return next
+
+  const done = satisfied ? [...log.done, actionId] : log.done.filter((id) => id !== actionId)
+  return { ...next, logs: { ...next.logs, [date]: { ...log, done, date } } }
+}
+
+export function addEntry(input: Omit<Entry, 'id' | 'at'>) {
+  const entry: Entry = { ...input, id: `e_${uid()}`, at: new Date().toISOString() }
+  set(syncDone({ ...state, entries: [...state.entries, entry] }, entry.date, entry.actionId))
+}
+
+export function updateEntry(id: string, patch: Partial<Entry>) {
+  const target = state.entries.find((e) => e.id === id)
+  if (!target) return
+  const entries = state.entries.map((e) => (e.id === id ? { ...e, ...patch } : e))
+  set(syncDone({ ...state, entries }, target.date, target.actionId))
+}
+
+export function removeEntry(id: string) {
+  const target = state.entries.find((e) => e.id === id)
+  if (!target) return
+  const entries = state.entries.filter((e) => e.id !== id)
+  set(syncDone({ ...state, entries }, target.date, target.actionId))
+}
+
 /* ------------------------------------------------------------ 계획 블록 */
 
 export function seedBlocks(date: string) {
@@ -166,7 +208,13 @@ export function deleteAction(id: string) {
   for (const [date, log] of Object.entries(state.logs)) {
     logs[date] = { ...log, done: log.done.filter((a) => a !== id) }
   }
-  set({ ...state, actions: state.actions.filter((a) => a.id !== id), logs })
+  set({
+    ...state,
+    actions: state.actions.filter((a) => a.id !== id),
+    logs,
+    // 행동을 지우면 그 행동으로 남긴 가계부·기록도 함께 사라진다.
+    entries: state.entries.filter((e) => e.actionId !== id),
+  })
 }
 
 export function moveAction(id: string, delta: number) {

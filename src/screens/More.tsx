@@ -14,8 +14,9 @@ import {
   updateAction,
   useAppState,
 } from '../lib/store'
+import { TOOLS, toolMeta } from '../data/tools'
 import { ALL_WEEKDAYS, capitalStats } from '../lib/stats'
-import type { Action, CapitalId, ThemePref, Weekday } from '../types'
+import type { Action, ActionTool, CapitalId, ThemePref, ToolKind, Weekday } from '../types'
 import { Button, Card, CardHead, Empty, Field, TextInput } from '../components/ui'
 
 function DayPicker({ value, onChange }: { value: Weekday[]; onChange: (v: Weekday[]) => void }) {
@@ -54,9 +55,23 @@ interface Draft {
   capital: CapitalId
   cue: string
   days: Weekday[]
+  tool: ActionTool
 }
 
-const emptyDraft: Draft = { title: '', capital: 'psych', cue: '', days: [] }
+const emptyDraft: Draft = {
+  title: '',
+  capital: 'psych',
+  cue: '',
+  days: [],
+  tool: { kind: 'none' },
+}
+
+/** 도구를 바꿀 때 그 도구에 맞는 기본값으로 갈아끼운다 */
+function defaultTool(kind: ToolKind): ActionTool {
+  if (kind === 'counter') return { kind, target: undefined, unit: '회' }
+  if (kind === 'duration') return { kind, target: undefined }
+  return { kind }
+}
 
 function ActionForm({
   initial,
@@ -119,6 +134,66 @@ function ActionForm({
         />
       </Field>
 
+      <Field label="앱이 거들 방법" hint={toolMeta(draft.tool.kind).hint}>
+        <div className="grid grid-cols-3 gap-1.5">
+          {TOOLS.map((t) => {
+            const on = draft.tool.kind === t.kind
+            return (
+              <button
+                key={t.kind}
+                type="button"
+                aria-pressed={on}
+                onClick={() => setDraft({ ...draft, tool: defaultTool(t.kind) })}
+                className={`flex min-h-10 items-center justify-center gap-1 rounded-xl px-1 text-[11px] transition-colors ${
+                  on ? 'bg-surface text-ink ring-2 ring-[var(--accent)]' : 'bg-surface text-muted ring-1 ring-hair'
+                }`}
+              >
+                <span aria-hidden>{t.emoji}</span>
+                {t.label}
+              </button>
+            )
+          })}
+        </div>
+      </Field>
+
+      {draft.tool.kind === 'counter' || draft.tool.kind === 'duration' ? (
+        <Field
+          label="하루 목표 (선택)"
+          hint={
+            draft.tool.kind === 'duration'
+              ? '분 단위. 비워두면 한 번만 적어도 완료로 봅니다.'
+              : '비워두면 한 번만 적어도 완료로 봅니다.'
+          }
+        >
+          <div className="flex items-center gap-2">
+            <TextInput
+              type="number"
+              min={0}
+              inputMode="numeric"
+              value={draft.tool.target ?? ''}
+              placeholder="0"
+              className="!w-24 !bg-surface"
+              onChange={(e) =>
+                setDraft({
+                  ...draft,
+                  tool: { ...draft.tool, target: Number(e.target.value) || undefined },
+                })
+              }
+            />
+            {draft.tool.kind === 'counter' ? (
+              <TextInput
+                value={draft.tool.unit ?? ''}
+                placeholder="단위 (잔, 개…)"
+                className="!bg-surface"
+                onChange={(e) => setDraft({ ...draft, tool: { ...draft.tool, unit: e.target.value } })}
+              />
+            ) : (
+              <span className="text-[12px] text-muted">분</span>
+            )}
+          </div>
+        </Field>
+      ) : null}
+
       <Field label="요일">
         <DayPicker value={draft.days} onChange={(v) => setDraft({ ...draft, days: v })} />
       </Field>
@@ -148,6 +223,7 @@ function ActionRow({ action }: { action: Action }) {
             capital: action.capital,
             cue: action.cue ?? '',
             days: action.days,
+            tool: action.tool ?? { kind: 'none' },
           }}
           submitLabel="저장"
           onCancel={() => setEditing(false)}
@@ -157,6 +233,7 @@ function ActionRow({ action }: { action: Action }) {
               capital: d.capital,
               cue: d.cue.trim(),
               days: d.days,
+              tool: d.tool,
             })
             setEditing(false)
           }}
@@ -181,6 +258,9 @@ function ActionRow({ action }: { action: Action }) {
             {capital(action.capital).short} ·{' '}
             {action.days.length === 0 ? '매일' : action.days.map((d) => WEEKDAY_LABELS[d]).join('·')}
             {action.cue ? ` · ${action.cue}` : ''}
+            {action.tool && action.tool.kind !== 'none'
+              ? ` · ${toolMeta(action.tool.kind).emoji} ${toolMeta(action.tool.kind).label}`
+              : ''}
           </p>
         </div>
       </div>
@@ -303,6 +383,7 @@ export function More() {
                   capital: d.capital,
                   cue: d.cue.trim(),
                   days: d.days,
+                  tool: d.tool,
                 })
                 setAdding(false)
               }}
