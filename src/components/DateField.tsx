@@ -10,7 +10,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import React, { useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { addDays, formatDate, today } from '../lib/date';
+import { addDays, formatDateFull, today } from '../lib/date';
 import { colors, font, radius, spacing } from '../theme';
 import type { ISODate } from '../types';
 
@@ -46,7 +46,7 @@ export function DateField({
   return (
     <View style={{ gap: spacing.sm }}>
       <Pressable style={styles.field} onPress={() => setOpen(true)}>
-        <Text style={styles.fieldText}>{formatDate(value)}</Text>
+        <Text style={styles.fieldText}>{formatDateFull(value)}</Text>
         <Text style={styles.fieldHint}>변경</Text>
       </Pressable>
 

@@ -304,6 +304,7 @@ export function BarChart({
         const slot = innerW / bars.length;
         const barW = Math.min(28, slot * 0.6);
         const labelStep = Math.max(1, Math.ceil(bars.length / 6));
+        const targetLabel = targetLine ? `목표 ${axisWon(targetLine)}` : '';
 
         return (
           <Svg width={width} height={height}>
@@ -322,30 +323,6 @@ export function BarChart({
 
             {/* 0선 */}
             <Line x1={padL} y1={zeroY} x2={width - padR} y2={zeroY} stroke={colors.border} strokeWidth={1} />
-
-            {targetLine ? (
-              <G>
-                <Line
-                  x1={padL}
-                  y1={y(targetLine)}
-                  x2={width - padR}
-                  y2={y(targetLine)}
-                  stroke={colors.warn}
-                  strokeWidth={1.5}
-                  strokeDasharray="4 4"
-                />
-                {/* 라벨은 왼쪽에 둔다. 오른쪽은 최신 막대가 있어 겹친다. */}
-                <SvgText
-                  x={padL + 2}
-                  y={y(targetLine) - 5}
-                  fill={colors.warn}
-                  fontSize={font.tiny}
-                  textAnchor="start"
-                >
-                  목표 {axisWon(targetLine)}
-                </SvgText>
-              </G>
-            ) : null}
 
             {bars.map((b, i) => {
               const cx = padL + slot * i + slot / 2;
@@ -376,6 +353,43 @@ export function BarChart({
                 </G>
               );
             })}
+
+            {/*
+              목표선은 막대 뒤가 아니라 위에 그린다. 기준선이 막대에 가려지면
+              무엇과 비교하는 선인지 알 수 없다.
+              라벨은 왼쪽에 두고(오른쪽은 최신 막대와 겹친다) 뒤에 배경을 깔아
+              막대 위를 지나도 읽히게 한다. SVG 텍스트는 배경을 못 가지므로 rect를 쓴다.
+            */}
+            {targetLine ? (
+              <G>
+                <Line
+                  x1={padL}
+                  y1={y(targetLine)}
+                  x2={width - padR}
+                  y2={y(targetLine)}
+                  stroke={colors.warn}
+                  strokeWidth={1.5}
+                  strokeDasharray="4 4"
+                />
+                <Rect
+                  x={padL}
+                  y={y(targetLine) - font.tiny - 7}
+                  width={targetLabel.length * 7 + 8}
+                  height={font.tiny + 7}
+                  rx={3}
+                  fill={colors.surface}
+                />
+                <SvgText
+                  x={padL + 4}
+                  y={y(targetLine) - 7}
+                  fill={colors.warn}
+                  fontSize={font.tiny}
+                  textAnchor="start"
+                >
+                  {targetLabel}
+                </SvgText>
+              </G>
+            ) : null}
           </Svg>
         );
       }}

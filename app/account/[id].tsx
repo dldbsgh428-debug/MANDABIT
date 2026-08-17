@@ -8,7 +8,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { LineChart } from '../../src/components/charts';
 import { DateField } from '../../src/components/DateField';
 import { AmountInput, Button, Card, EmptyState, Field, Input } from '../../src/components/ui';
-import { formatDate, today } from '../../src/lib/date';
+import { formatDateFull, today } from '../../src/lib/date';
 import { parseAmount, shortWon, won } from '../../src/lib/money';
 import { useStore } from '../../src/store/StoreProvider';
 import { accountKindMeta, colors, font, radius, spacing } from '../../src/theme';
@@ -68,7 +68,7 @@ export default function AccountDetailScreen() {
   };
 
   const confirmRemoveSnapshot = (snapshotId: string, snapDate: string) => {
-    Alert.alert('이 기록을 삭제할까요?', `${formatDate(snapDate)} 기록이 사라집니다.`, [
+    Alert.alert('이 기록을 삭제할까요?', `${formatDateFull(snapDate)} 기록이 사라집니다.`, [
       { text: '취소', style: 'cancel' },
       { text: '삭제', style: 'destructive', onPress: () => removeSnapshot(snapshotId) },
     ]);
@@ -175,7 +175,7 @@ export default function AccountDetailScreen() {
                 ]}
               >
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.historyDate}>{formatDate(snapshot.date)}</Text>
+                  <Text style={styles.historyDate}>{formatDateFull(snapshot.date)}</Text>
                   {snapshot.memo ? <Text style={styles.historyMemo}>{snapshot.memo}</Text> : null}
                 </View>
                 <View style={{ alignItems: 'flex-end' }}>

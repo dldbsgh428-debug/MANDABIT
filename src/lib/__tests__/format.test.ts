@@ -5,6 +5,8 @@ import {
   addDays,
   addMonths,
   endOfMonth,
+  formatDate,
+  formatDateFull,
   formatMonth,
   isValidDate,
   monthRange,
@@ -123,5 +125,16 @@ describe('날짜 유틸', () => {
 
   it('월을 한국어로 쓴다', () => {
     expect(formatMonth('2026-08')).toBe('2026년 8월');
+  });
+
+  it('날짜에 요일을 붙인다', () => {
+    // 2026-08-17은 월요일.
+    expect(formatDate('2026-08-17')).toBe('8월 17일 (월)');
+  });
+
+  it('연도가 필요한 곳에는 연도까지 쓴다', () => {
+    // 목표 시한처럼 몇 년 뒤일 수 있는 날짜는 연도 없이는 오해를 부른다.
+    expect(formatDateFull('2028-12-31')).toBe('2028년 12월 31일 (일)');
+    expect(formatDateFull('2026-03-01')).toBe('2026년 3월 1일 (일)');
   });
 });

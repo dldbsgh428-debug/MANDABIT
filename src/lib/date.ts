@@ -72,11 +72,28 @@ export function formatMonthShort(month: MonthKey): string {
   return `${m}월`;
 }
 
-/** 'YYYY-MM-DD' -> '8월 17일 (월)' */
-export function formatDate(date: ISODate): string {
+/** 'YYYY-MM-DD' -> '(월)' 같은 요일 한 글자. */
+function dayOfWeek(date: ISODate): string {
   const [y, m, d] = date.split('-').map(Number);
-  const dow = ['일', '월', '화', '수', '목', '금', '토'][new Date(y, m - 1, d).getDay()];
-  return `${m}월 ${d}일 (${dow})`;
+  return ['일', '월', '화', '수', '목', '금', '토'][new Date(y, m - 1, d).getDay()];
+}
+
+/**
+ * 'YYYY-MM-DD' -> '8월 17일 (월)'
+ * 이미 어느 달을 보고 있는지 아는 화면(가계부 내역)에서 쓴다.
+ */
+export function formatDate(date: ISODate): string {
+  const [, m, d] = date.split('-').map(Number);
+  return `${m}월 ${d}일 (${dayOfWeek(date)})`;
+}
+
+/**
+ * 'YYYY-MM-DD' -> '2028년 12월 31일 (일)'
+ * 목표 시한처럼 몇 년 뒤일 수도 있는 날짜에는 연도가 반드시 필요하다.
+ */
+export function formatDateFull(date: ISODate): string {
+  const [y, m, d] = date.split('-').map(Number);
+  return `${y}년 ${m}월 ${d}일 (${dayOfWeek(date)})`;
 }
 
 /** 'YYYY-MM-DD' 형식이 맞는지, 그리고 실제 존재하는 날짜인지 확인. */

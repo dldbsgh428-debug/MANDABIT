@@ -7,7 +7,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 
 import { Card, Loading, SectionHeader, ToggleRow } from '../../src/components/ui';
 import { exportBackup, importBackup } from '../../src/lib/backup';
-import { formatDate } from '../../src/lib/date';
+import { formatDateFull } from '../../src/lib/date';
 import { shortWon } from '../../src/lib/money';
 import { useStore } from '../../src/store/StoreProvider';
 import { colors, font, spacing } from '../../src/theme';
@@ -103,14 +103,14 @@ export default function SettingsScreen() {
         <Row
           icon="calendar-outline"
           label="목표 시한"
-          value={data.settings.goalDeadline ? formatDate(data.settings.goalDeadline) : '미설정'}
+          value={data.settings.goalDeadline ? formatDateFull(data.settings.goalDeadline) : '미설정'}
           onPress={() => router.push('/goal')}
           border
         />
         <Row
           icon="play-outline"
           label="프로젝트 시작일"
-          value={formatDate(data.settings.startDate)}
+          value={formatDateFull(data.settings.startDate)}
           onPress={() => router.push('/goal')}
           border
         />

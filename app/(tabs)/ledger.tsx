@@ -8,7 +8,14 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { DonutChart } from '../../src/components/charts';
 import { Card, EmptyState, Loading, Segmented } from '../../src/components/ui';
 import { categoryBreakdown, monthlyCashflow } from '../../src/lib/analytics';
-import { addMonths, currentMonth, formatDate, formatMonth, monthOf } from '../../src/lib/date';
+import {
+  addMonths,
+  currentMonth,
+  formatDate,
+  formatDateFull,
+  formatMonth,
+  monthOf,
+} from '../../src/lib/date';
 import { percent, shortWon, won } from '../../src/lib/money';
 import { useStore } from '../../src/store/StoreProvider';
 import { colors, font, radius, spacing } from '../../src/theme';
@@ -60,7 +67,7 @@ export default function LedgerScreen() {
   const { cashflow, breakdown, groups } = view;
 
   const confirmDelete = (tx: Transaction) => {
-    Alert.alert('거래를 삭제할까요?', `${formatDate(tx.date)} · ${won(tx.amount)}`, [
+    Alert.alert('거래를 삭제할까요?', `${formatDateFull(tx.date)} · ${won(tx.amount)}`, [
       { text: '취소', style: 'cancel' },
       { text: '삭제', style: 'destructive', onPress: () => removeTransaction(tx.id) },
     ]);
@@ -118,7 +125,8 @@ export default function LedgerScreen() {
           {cashflow.income > 0 ? (
             <Text style={styles.savingRate}>
               저축률 {percent(cashflow.savingRate)} · 수입 100만원당{' '}
-              {shortWon(Math.round(cashflow.savingRate * 1_000_000))} 저축
+              {/* 어림잡는 문장이라 만원 단위로 끊는다. 100만원의 X%는 곧 X만원이다. */}
+              {Math.round(cashflow.savingRate * 100).toLocaleString('ko-KR')}만원 저축
             </Text>
           ) : null}
         </Card>
