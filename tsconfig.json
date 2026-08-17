@@ -1,0 +1,9 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    // jest 전역(describe/it/expect)과 node 전역(require)을 명시적으로 넣는다.
+    // 이 프로젝트의 TypeScript 버전은 @types/*를 자동으로 끌어오지 않는다.
+    "types": ["jest", "node"]
+  }
+}
