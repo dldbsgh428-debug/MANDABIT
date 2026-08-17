@@ -18,7 +18,7 @@ import {
 } from '../../src/components/ui';
 import { budgetStatus, monthlyCashflow } from '../../src/lib/analytics';
 import { currentMonth, formatMonth } from '../../src/lib/date';
-import { parseAmount, percent, shortWon, won } from '../../src/lib/money';
+import { parseAmount, percent, percentFloor, shortWon, won } from '../../src/lib/money';
 import { useStore } from '../../src/store/StoreProvider';
 import { colors, font, spacing } from '../../src/theme';
 
@@ -90,7 +90,7 @@ export default function BudgetScreen() {
                 ? `목표 초과 달성! ${shortWon(cashflow.saving - target)} 더 모았어요 🎉`
                 : cashflow.saving < 0
                   ? '이번 달은 지출이 수입보다 많아요.'
-                  : `달성률 ${percent(targetUsage, 0)} · ${shortWon(target - cashflow.saving)} 남음`}
+                  : `달성률 ${percentFloor(targetUsage)} · ${shortWon(target - cashflow.saving)} 남음`}
             </Text>
           </>
         ) : (
@@ -140,7 +140,7 @@ export default function BudgetScreen() {
             <BudgetBar usage={totalBudget > 0 ? totalSpent / totalBudget : 0} />
             <Text style={styles.summaryHint}>
               {totalBudget > 0
-                ? `소진율 ${percent(totalSpent / totalBudget, 0)}`
+                ? `소진율 ${percentFloor(totalSpent / totalBudget)}`
                 : '예산이 없습니다'}
               {overCount > 0 ? ` · 초과 ${overCount}개` : ''}
             </Text>
@@ -180,7 +180,7 @@ export default function BudgetScreen() {
                   <Text style={styles.lineHint}>
                     {over
                       ? `${shortWon(-line.remaining)} 초과`
-                      : `${shortWon(line.remaining)} 남음 · ${percent(line.usage, 0)} 사용`}
+                      : `${shortWon(line.remaining)} 남음 · ${percentFloor(line.usage)} 사용`}
                   </Text>
                 </Card>
               );

@@ -1,6 +1,15 @@
 /** 금액 표시와 날짜 유틸 테스트. */
 
-import { axisWon, comma, formatAmountInput, parseAmount, percent, shortWon, won } from '../money';
+import {
+  axisWon,
+  comma,
+  formatAmountInput,
+  parseAmount,
+  percent,
+  percentFloor,
+  shortWon,
+  won,
+} from '../money';
 import {
   addDays,
   addMonths,
@@ -74,6 +83,16 @@ describe('금액 표시', () => {
     expect(percent(1)).toBe('100.0%');
     expect(percent(0.5, 0)).toBe('50%');
     expect(percent(NaN)).toBe('-');
+  });
+
+  it('경고 기준이 붙는 퍼센트는 내림한다', () => {
+    // 예산 소진율 79.75%가 '80% 사용'으로 보이면서 주의 배지는 안 뜨는
+    // 모순을 막기 위해, 80%는 실제로 80%에 도달했을 때만 나와야 한다.
+    expect(percentFloor(0.7975)).toBe('79%');
+    expect(percentFloor(0.8)).toBe('80%');
+    expect(percentFloor(0.999)).toBe('99%');
+    expect(percentFloor(1)).toBe('100%');
+    expect(percentFloor(NaN)).toBe('-');
   });
 });
 

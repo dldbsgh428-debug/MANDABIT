@@ -69,3 +69,14 @@ export function percent(ratio: number, digits = 1): string {
   if (!Number.isFinite(ratio)) return '-';
   return `${(ratio * 100).toFixed(digits)}%`;
 }
+
+/**
+ * 내림한 정수 퍼센트. "80%"는 실제로 80%에 도달했을 때만 나온다.
+ *
+ * 예산 소진율처럼 경고 기준(80%, 100%)이 붙는 숫자에 쓴다. 반올림하면
+ * 79.75%가 "80% 사용"으로 보이면서 주의 배지는 안 뜨는 모순이 생긴다.
+ */
+export function percentFloor(ratio: number): string {
+  if (!Number.isFinite(ratio)) return '-';
+  return `${Math.floor(ratio * 100)}%`;
+}

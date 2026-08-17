@@ -23,7 +23,7 @@ import {
   monthOf,
   monthsBetween,
 } from '../../src/lib/date';
-import { percent, shortWon, won } from '../../src/lib/money';
+import { percent, percentFloor, shortWon, won } from '../../src/lib/money';
 import { useStore } from '../../src/store/StoreProvider';
 import { colors, font, radius, spacing } from '../../src/theme';
 
@@ -224,7 +224,7 @@ export default function Dashboard() {
           <View style={styles.row}>
             <Text style={styles.rowLabel}>월 저축 목표 달성률</Text>
             <Text style={styles.rowValue}>
-              {percent(cashflow.saving / data.settings.monthlySavingTarget, 0)}
+              {percentFloor(cashflow.saving / data.settings.monthlySavingTarget)}
             </Text>
           </View>
         ) : null}
