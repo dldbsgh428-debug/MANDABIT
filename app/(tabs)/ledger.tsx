@@ -6,7 +6,7 @@ import React, { useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { DonutChart } from '../../src/components/charts';
-import { Card, EmptyState, Loading, Segmented } from '../../src/components/ui';
+import { Card, EmptyState, Segmented } from '../../src/components/ui';
 import { categoryBreakdown, monthlyCashflow } from '../../src/lib/analytics';
 import {
   addMonths,
@@ -23,7 +23,7 @@ import type { Transaction, TxType } from '../../src/types';
 
 export default function LedgerScreen() {
   const router = useRouter();
-  const { data, ready, removeTransaction } = useStore();
+  const { data, removeTransaction } = useStore();
   const [month, setMonth] = useState(currentMonth());
   const [tab, setTab] = useState<TxType>('expense');
 
@@ -60,8 +60,6 @@ export default function LedgerScreen() {
 
     return { cashflow, breakdown, donutSlices, groups, count: txs.length };
   }, [data, month, tab]);
-
-  if (!ready) return <Loading />;
 
   const isCurrentMonth = month === currentMonth();
   const { cashflow, breakdown, groups } = view;

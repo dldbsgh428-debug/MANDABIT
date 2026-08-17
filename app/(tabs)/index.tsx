@@ -7,7 +7,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BarChart, DonutChart, LineChart, ProgressRing } from '../../src/components/charts';
-import { Card, DeltaBadge, Divider, Loading, SectionHeader } from '../../src/components/ui';
+import { Card, DeltaBadge, Divider, SectionHeader } from '../../src/components/ui';
 import {
   assetAllocation,
   forecastGoal,
@@ -30,7 +30,7 @@ import { colors, font, radius, spacing } from '../../src/theme';
 export default function Dashboard() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { data, ready } = useStore();
+  const { data } = useStore();
 
   const view = useMemo(() => {
     const month = currentMonth();
@@ -48,8 +48,6 @@ export default function Dashboard() {
 
     return { month, series, forecast, required, cashflow, allocation, current, elapsedMonths };
   }, [data]);
-
-  if (!ready) return <Loading />;
 
   const { series, forecast, required, cashflow, allocation, current } = view;
   const net = current?.net ?? 0;

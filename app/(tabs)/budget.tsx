@@ -13,7 +13,6 @@ import {
   Divider,
   EmptyState,
   Field,
-  Loading,
   SectionHeader,
 } from '../../src/components/ui';
 import { budgetStatus, monthlyCashflow } from '../../src/lib/analytics';
@@ -24,7 +23,7 @@ import { colors, font, spacing } from '../../src/theme';
 
 export default function BudgetScreen() {
   const router = useRouter();
-  const { data, ready, updateSettings } = useStore();
+  const { data, updateSettings } = useStore();
   const month = currentMonth();
 
   // 월 저축 목표를 이 화면에서 바로 고칠 수 있게 한다.
@@ -39,8 +38,6 @@ export default function BudgetScreen() {
     const overCount = lines.filter((l) => l.usage >= 1).length;
     return { cashflow, lines, totalBudget, totalSpent, overCount };
   }, [data, month]);
-
-  if (!ready) return <Loading />;
 
   const { cashflow, lines, totalBudget, totalSpent, overCount } = view;
   const target = data.settings.monthlySavingTarget;

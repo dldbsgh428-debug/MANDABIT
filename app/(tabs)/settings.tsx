@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { Card, Loading, SectionHeader, ToggleRow } from '../../src/components/ui';
+import { Card, SectionHeader, ToggleRow } from '../../src/components/ui';
 import { exportBackup, importBackup } from '../../src/lib/backup';
 import { formatDateFull } from '../../src/lib/date';
 import { shortWon } from '../../src/lib/money';
@@ -14,10 +14,8 @@ import { colors, font, spacing } from '../../src/theme';
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const { data, ready, updateSettings, replaceAll, resetAll } = useStore();
+  const { data, updateSettings, replaceAll, resetAll } = useStore();
   const [busy, setBusy] = useState(false);
-
-  if (!ready) return <Loading />;
 
   const handleExport = async () => {
     setBusy(true);

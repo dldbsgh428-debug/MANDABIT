@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { Card, EmptyState, Loading } from '../../src/components/ui';
+import { Card, EmptyState } from '../../src/components/ui';
 import { netWorth } from '../../src/lib/analytics';
 import { shortWon, won } from '../../src/lib/money';
 import { useStore } from '../../src/store/StoreProvider';
@@ -14,7 +14,7 @@ import type { Account } from '../../src/types';
 
 export default function AccountsScreen() {
   const router = useRouter();
-  const { data, ready } = useStore();
+  const { data } = useStore();
 
   const { assets, liabilities, summary } = useMemo(() => {
     const sorted = [...data.accounts].sort((a, b) => b.balance - a.balance);
@@ -24,8 +24,6 @@ export default function AccountsScreen() {
       summary: netWorth(data.accounts),
     };
   }, [data.accounts]);
-
-  if (!ready) return <Loading />;
 
   return (
     <View style={styles.screen}>
