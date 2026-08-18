@@ -16,7 +16,7 @@
     "android": {
       "package": "com.moa.money",
       "adaptiveIcon": {
-        "backgroundColor": "#0B0E14",
+        "backgroundColor": "#FAF4E8",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
