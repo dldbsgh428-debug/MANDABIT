@@ -7,6 +7,7 @@
 
 import type {
   Account,
+  ISODate,
   AppData,
   BalanceSnapshot,
   Category,
@@ -14,7 +15,133 @@ import type {
   Transaction,
   TxType,
 } from '../types';
-import { addMonths, currentMonth, endOfMonth, monthOf, monthsBetween, monthRange } from './date';
+import {
+  addMonths,
+  currentMonth,
+  daysBetween,
+  endOfMonth,
+  fullMonthsBetween,
+  monthOf,
+  monthsBetween,
+  monthRange,
+  today,
+} from './date';
+
+/* ------------------------------------------------------- 예상 잔액 증가 */
+
+export interface Projection {
+  /** 사용자가 마지막으로 입력한 잔액. 이 값은 절대 바뀌지 않는다. */
+  recorded: number;
+  /** 마지막 기록 이후 자동이체됐을 납입금 합계. */
+  deposits: number;
+  /** 마지막 기록 이후 붙었을 이자(단리). */
+  interest: number;
+  /** recorded + deposits + interest. 화면에 보여줄 '지금 잔액'. */
+  total: number;
+  /** 마지막 기록 이후 지난 일수. */
+  days: number;
+  /** 더해진 예상액이 있는지. false면 기록값과 같다. */
+  hasProjection: boolean;
+}
+
+/**
+ * 마지막으로 기록한 잔액에 그 이후의 납입금과 이자를 더해 '지금 잔액'을 추정한다.
+ *
+ * 중요한 점은 기준이 언제나 '마지막 기록 시점'이라는 것이다. 사용자가 실제 잔액을
+ * 입력하면 그 날짜가 새 기준이 되므로, 이미 반영된 이자를 또 더하는 일이 없다.
+ * 즉 추정치는 기록 위에 얹히기만 하고 기록을 덮어쓰지 않는다.
+ *
+ * 부채는 추정하지 않는다. 상환 계획을 모르는 채로 빚을 불리면 순자산이
+ * 실제보다 나쁘게 나오고, 그건 사용자가 입력한 적 없는 숫자다.
+ *
+ * 이자는 단리로 일할 계산한다. 한국의 정기예금·정기적금이 단리이기 때문이다.
+ * 납입금에도 각각 들어간 날부터의 이자가 붙는다.
+ */
+export function projectBalance(
+  account: Account,
+  lastRecordDate: ISODate,
+  asOf: ISODate = today(),
+): Projection {
+  const none: Projection = {
+    recorded: account.balance,
+    deposits: 0,
+    interest: 0,
+    total: account.balance,
+    days: 0,
+    hasProjection: false,
+  };
+
+  if (account.side !== 'asset') return none;
+
+  const days = daysBetween(lastRecordDate, asOf);
+  if (days <= 0) return none;
+
+  const monthly = account.monthlyDeposit ?? 0;
+  const yearlyRate = (account.interestRate ?? 0) / 100;
+  if (monthly <= 0 && yearlyRate <= 0) return { ...none, days };
+
+  const months = fullMonthsBetween(lastRecordDate, asOf);
+  const deposits = monthly * months;
+
+  // 기존 잔액에 붙는 이자
+  let interest = account.balance * yearlyRate * (days / 365);
+
+  // 납입금은 들어간 날부터 이자가 붙는다. k번째 납입은 k개월 뒤에 들어갔다고 본다.
+  for (let k = 1; k <= months; k++) {
+    const heldDays = days - k * (365 / 12);
+    if (heldDays > 0) interest += monthly * yearlyRate * (heldDays / 365);
+  }
+
+  const rounded = Math.round(interest);
+  const total = account.balance + deposits + rounded;
+
+  return {
+    recorded: account.balance,
+    deposits,
+    interest: rounded,
+    total,
+    days,
+    hasProjection: deposits > 0 || rounded > 0,
+  };
+}
+
+/** 계좌의 마지막 잔액 기록 날짜. 기록이 없으면 계좌를 만든 날. */
+export function lastRecordDate(account: Account, snapshots: BalanceSnapshot[]): ISODate {
+  let latest = '';
+  for (const s of snapshots) {
+    if (s.accountId === account.id && s.date > latest) latest = s.date;
+  }
+  return latest || account.createdAt.slice(0, 10);
+}
+
+/**
+ * 순자산 계산에 쓸 계좌별 '지금 잔액'.
+ * project가 false면 기록값을 그대로 쓴다.
+ */
+export function currentBalances(
+  accounts: Account[],
+  snapshots: BalanceSnapshot[],
+  project: boolean,
+  asOf: ISODate = today(),
+): Map<string, Projection> {
+  const out = new Map<string, Projection>();
+  for (const account of accounts) {
+    out.set(
+      account.id,
+      project
+        ? projectBalance(account, lastRecordDate(account, snapshots), asOf)
+        : {
+            recorded: account.balance,
+            deposits: 0,
+            interest: 0,
+            total: account.balance,
+            days: 0,
+            hasProjection: false,
+          },
+    );
+  }
+  return out;
+}
 
 export interface NetWorth {
   assets: number;
@@ -22,14 +149,20 @@ export interface NetWorth {
   net: number;
 }
 
-/** 현재 계좌 잔액으로 순자산을 계산한다. includeInNetWorth가 false면 제외. */
-export function netWorth(accounts: Account[]): NetWorth {
+/**
+ * 현재 계좌 잔액으로 순자산을 계산한다. includeInNetWorth가 false면 제외.
+ *
+ * balances를 넘기면 그 값(예상 증가가 반영된 잔액)을 쓰고,
+ * 없으면 기록된 잔액을 그대로 쓴다.
+ */
+export function netWorth(accounts: Account[], balances?: Map<string, Projection>): NetWorth {
   let assets = 0;
   let liabilities = 0;
   for (const a of accounts) {
     if (!a.includeInNetWorth) continue;
-    if (a.side === 'asset') assets += a.balance;
-    else liabilities += a.balance;
+    const amount = balances?.get(a.id)?.total ?? a.balance;
+    if (a.side === 'asset') assets += amount;
+    else liabilities += amount;
   }
   return { assets, liabilities, net: assets - liabilities };
 }
@@ -82,13 +215,15 @@ export function netWorthSeries(
   snapshots: BalanceSnapshot[],
   from: MonthKey,
   to: MonthKey = currentMonth(),
+  balances?: Map<string, Projection>,
 ): NetWorthPoint[] {
   const now = currentMonth();
   const points: NetWorthPoint[] = [];
   let prev: number | undefined;
 
   for (const month of monthRange(from, to)) {
-    const nw = month >= now ? netWorth(accounts) : netWorthAt(accounts, snapshots, month);
+    // 지난 달들은 기록으로만 그린다. 과거에 예상치를 섞으면 추이가 사실이 아니게 된다.
+    const nw = month >= now ? netWorth(accounts, balances) : netWorthAt(accounts, snapshots, month);
     points.push({ month, ...nw, delta: prev === undefined ? 0 : nw.net - prev });
     prev = nw.net;
   }
@@ -318,7 +453,10 @@ export function budgetStatus(
 }
 
 /** 계좌 종류별 자산 비중(도넛 차트용). 부채는 제외. */
-export function assetAllocation(accounts: Account[]): CategorySlice[] {
+export function assetAllocation(
+  accounts: Account[],
+  balances?: Map<string, Projection>,
+): CategorySlice[] {
   const labels: Record<string, { name: string; emoji: string }> = {
     cash: { name: '현금', emoji: '💵' },
     deposit: { name: '예금', emoji: '🏦' },
@@ -334,8 +472,9 @@ export function assetAllocation(accounts: Account[]): CategorySlice[] {
   let total = 0;
   for (const a of accounts) {
     if (a.side !== 'asset' || !a.includeInNetWorth) continue;
-    sums.set(a.kind, (sums.get(a.kind) ?? 0) + a.balance);
-    total += a.balance;
+    const amount = balances?.get(a.id)?.total ?? a.balance;
+    sums.set(a.kind, (sums.get(a.kind) ?? 0) + amount);
+    total += amount;
   }
 
   const out: CategorySlice[] = [];

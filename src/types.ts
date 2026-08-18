@@ -38,8 +38,13 @@ export interface Account {
   balance: number;
   /** 순자산 집계에서 제외하고 싶은 계좌(예: 비상금 별도 관리)를 위한 플래그. */
   includeInNetWorth: boolean;
-  /** 연이율(%). 대출 이자나 예금 금리 메모용. 계산에는 쓰지 않는다. */
+  /** 연이율(%). 예상 잔액 증가를 켜면 이 값으로 이자를 계산한다. */
   interestRate?: number;
+  /**
+   * 매달 자동이체로 들어가는 금액(적금 등).
+   * 예상 잔액 증가를 켜면 마지막 기록 이후 지난 개월수만큼 더해진다.
+   */
+  monthlyDeposit?: number;
   memo?: string;
   createdAt: string;
   updatedAt: string;
@@ -94,6 +99,11 @@ export interface Settings {
   startDate: ISODate;
   /** 순자산 추이 차트에 목표 달성 예상선을 겹쳐 보여줄지. */
   showForecastLine: boolean;
+  /**
+   * 마지막 기록 이후의 납입금·이자를 잔액에 얹어서 보여줄지.
+   * 끄면 입력한 잔액만 그대로 쓴다.
+   */
+  projectBalances: boolean;
 }
 
 /** AsyncStorage에 저장되는 전체 상태. */

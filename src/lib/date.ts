@@ -111,3 +111,28 @@ export function addDays(date: ISODate, delta: number): ISODate {
   const dt = new Date(y, m - 1, d + delta);
   return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}`;
 }
+
+/**
+ * 두 날짜 사이의 일수. daysBetween('2026-01-01', '2026-01-31') -> 30
+ * 정오 기준으로 계산해서 서머타임 같은 시간 변화에 흔들리지 않게 한다.
+ */
+export function daysBetween(from: ISODate, to: ISODate): number {
+  const [fy, fm, fd] = from.split('-').map(Number);
+  const [ty, tm, td] = to.split('-').map(Number);
+  const a = new Date(fy, fm - 1, fd, 12).getTime();
+  const b = new Date(ty, tm - 1, td, 12).getTime();
+  return Math.round((b - a) / 86_400_000);
+}
+
+/**
+ * from에서 to까지 지난 '만 개월' 수.
+ * 날짜가 아직 안 됐으면 세지 않는다.
+ * fullMonthsBetween('2026-01-15', '2026-03-14') -> 1
+ */
+export function fullMonthsBetween(from: ISODate, to: ISODate): number {
+  const [fy, fm, fd] = from.split('-').map(Number);
+  const [ty, tm, td] = to.split('-').map(Number);
+  let months = (ty - fy) * 12 + (tm - fm);
+  if (td < fd) months -= 1;
+  return Math.max(0, months);
+}

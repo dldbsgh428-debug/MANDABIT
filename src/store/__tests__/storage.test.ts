@@ -31,6 +31,29 @@ describe('migrate', () => {
     expect(result.transactions).toEqual([]);
   });
 
+  it('업데이트로 새로 생긴 기본 카테고리를 기존 목록에 더한다', () => {
+    // 이미 쓰던 사용자에게도 새 카테고리가 보여야 한다.
+    const savedOnly = [
+      { id: 'exp-food', name: '식비', type: 'expense' as const, emoji: '🍚', isDefault: true },
+    ];
+    const result = migrate({ categories: savedOnly });
+
+    expect(result.categories.find((c) => c.id === 'exp-food')).toBeDefined();
+    expect(result.categories.find((c) => c.id === 'exp-meeting')).toBeDefined();
+    expect(result.categories.length).toBe(initialData().categories.length);
+  });
+
+  it('사용자가 고친 카테고리는 건드리지 않는다', () => {
+    const renamed = [
+      { id: 'exp-food', name: '밥값', type: 'expense' as const, emoji: '🍜', budget: 300_000 },
+    ];
+    const result = migrate({ categories: renamed });
+    const food = result.categories.find((c) => c.id === 'exp-food');
+
+    expect(food?.name).toBe('밥값');
+    expect(food?.budget).toBe(300_000);
+  });
+
   it('카테고리가 비어 있으면 기본 카테고리를 넣어준다', () => {
     // 카테고리가 하나도 없으면 거래를 입력할 수 없게 되므로 기본값으로 되살린다.
     const result = migrate({ categories: [] });

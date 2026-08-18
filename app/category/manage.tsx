@@ -22,6 +22,7 @@ import type { Category, TxType } from '../../src/types';
 const EMOJI_CHOICES = [
   '🍚', '☕', '🏠', '🚇', '📱', '🔁', '💊', '🛍️', '🎬', '💐',
   '🛡️', '📚', '🎮', '✈️', '🐶', '🎁', '💼', '📈', '🛠️', '➕',
+  '🍻', '🏋️', '💇', '🚗', '🧾', '💊',
 ];
 
 export default function CategoryManageScreen() {

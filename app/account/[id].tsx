@@ -5,6 +5,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { projectBalance } from '../../src/lib/analytics';
 import { LineChart } from '../../src/components/charts';
 import { FormScreen } from '../../src/components/FormScreen';
 import { DateField } from '../../src/components/DateField';
@@ -49,6 +50,13 @@ export default function AccountDetailScreen() {
 
   const meta = accountKindMeta[account.kind] ?? { label: '기타', emoji: '📦' };
   const isLiability = account.side === 'liability';
+
+  // 마지막 기록 이후 붙었을 이자·납입금. 설정에서 끄면 기록값 그대로다.
+  const recordedOn = history[0]?.date ?? account.createdAt.slice(0, 10);
+  const projection = data.settings.projectBalances
+    ? projectBalance(account, recordedOn)
+    : null;
+  const shownBalance = projection?.total ?? account.balance;
 
   // 오래된 순서로 뒤집어야 차트가 왼쪽에서 오른쪽으로 흐른다.
   const chartPoints = [...history]
@@ -95,9 +103,40 @@ export default function AccountDetailScreen() {
           {isLiability ? ' · 부채' : ''}
         </Text>
         <Text style={[styles.heroValue, isLiability && { color: colors.down }]}>
-          {isLiability && account.balance > 0 ? '-' : ''}
-          {won(account.balance)}
+          {isLiability && shownBalance > 0 ? '-' : ''}
+          {won(shownBalance)}
         </Text>
+
+        {projection?.hasProjection ? (
+          <View style={styles.projectionBox}>
+            <Text style={styles.projectionTitle}>
+              {formatDateFull(recordedOn)} 기록 이후 {projection.days}일치 예상
+            </Text>
+            <View style={styles.projectionRow}>
+              <Text style={styles.projectionLabel}>기록한 잔액</Text>
+              <Text style={styles.projectionValue}>{won(projection.recorded)}</Text>
+            </View>
+            {projection.deposits > 0 ? (
+              <View style={styles.projectionRow}>
+                <Text style={styles.projectionLabel}>납입금</Text>
+                <Text style={[styles.projectionValue, { color: colors.up }]}>
+                  +{won(projection.deposits)}
+                </Text>
+              </View>
+            ) : null}
+            {projection.interest > 0 ? (
+              <View style={styles.projectionRow}>
+                <Text style={styles.projectionLabel}>이자</Text>
+                <Text style={[styles.projectionValue, { color: colors.up }]}>
+                  +{won(projection.interest)}
+                </Text>
+              </View>
+            ) : null}
+            <Text style={styles.projectionNote}>
+              추정치입니다. 실제 잔액을 기록하면 그 값이 새 기준이 됩니다.
+            </Text>
+          </View>
+        ) : null}
         {account.interestRate ? (
           <Text style={styles.heroMeta}>연 {account.interestRate}%</Text>
         ) : null}
@@ -134,6 +173,7 @@ export default function AccountDetailScreen() {
         <Button
           title="잔액 업데이트"
           onPress={() => {
+            // 예상치가 아니라 마지막으로 기록한 값을 채운다. 실제 잔액을 확인해 고치라는 뜻이다.
             setAmount(String(account.balance));
             setOpen(true);
           }}
@@ -216,6 +256,20 @@ const styles = StyleSheet.create({
   heroValue: { color: colors.text, fontSize: font.h1, fontWeight: '800' },
   heroMeta: { color: colors.textMuted, fontSize: font.small },
   heroMemo: { color: colors.textMuted, fontSize: font.small, textAlign: 'center', marginTop: 4 },
+
+  projectionBox: {
+    alignSelf: 'stretch',
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    gap: 3,
+  },
+  projectionTitle: { color: colors.textFaint, fontSize: font.tiny, marginBottom: 4 },
+  projectionRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  projectionLabel: { color: colors.textMuted, fontSize: font.small },
+  projectionValue: { color: colors.text, fontSize: font.small, fontWeight: '600' },
+  projectionNote: { color: colors.textFaint, fontSize: font.tiny, marginTop: 6, lineHeight: 16 },
   excludedBadge: {
     backgroundColor: colors.surfaceAlt,
     paddingHorizontal: spacing.sm,

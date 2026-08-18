@@ -175,6 +175,7 @@ export interface StoreValue {
     balance: number;
     includeInNetWorth?: boolean;
     interestRate?: number;
+    monthlyDeposit?: number;
     memo?: string;
   }) => void;
   updateAccount: (id: string, patch: Partial<Account>) => void;
@@ -235,6 +236,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         balance: input.balance,
         includeInNetWorth: input.includeInNetWorth ?? true,
         interestRate: input.interestRate,
+        monthlyDeposit: input.monthlyDeposit,
         memo: input.memo,
         createdAt: now,
         updatedAt: now,

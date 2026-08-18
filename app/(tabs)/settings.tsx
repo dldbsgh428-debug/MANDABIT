@@ -122,6 +122,12 @@ export default function SettingsScreen() {
           value={data.settings.showForecastLine}
           onChange={(v) => updateSettings({ showForecastLine: v })}
         />
+        <ToggleRow
+          label="예상 잔액 증가"
+          hint="금리·월 납입액을 넣은 계좌에 마지막 기록 이후의 이자와 납입금을 더해 보여줍니다. 실제 잔액을 기록하면 그 값이 새 기준이 됩니다."
+          value={data.settings.projectBalances}
+          onChange={(v) => updateSettings({ projectBalances: v })}
+        />
       </Card>
 
       <SectionHeader title="분류" />

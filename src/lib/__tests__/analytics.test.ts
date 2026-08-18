@@ -9,6 +9,8 @@
 
 import {
   assetAllocation,
+  lastRecordDate,
+  projectBalance,
   budgetStatus,
   categoryBreakdown,
   forecastGoal,
@@ -402,5 +404,141 @@ describe('assetAllocation', () => {
 
   it('자산이 없으면 빈 배열이다', () => {
     expect(assetAllocation([])).toEqual([]);
+  });
+});
+
+
+/* --------------------------------------------------------- 예상 잔액 증가 */
+
+describe('projectBalance', () => {
+  it('마지막 기록 이후 지난 개월수만큼 납입금을 더한다', () => {
+    // 1/15에 100만원을 기록했고 매달 50만원씩 넣는 적금. 4/15면 3개월치.
+    const a = account({
+      id: 'a',
+      balance: 1_000_000,
+      kind: 'savings',
+      monthlyDeposit: 500_000,
+    });
+    const p = projectBalance(a, '2026-01-15', '2026-04-15');
+
+    expect(p.deposits).toBe(1_500_000);
+    expect(p.recorded).toBe(1_000_000);
+    expect(p.total).toBe(2_500_000);
+  });
+
+  it('날짜가 안 찼으면 그 달치는 세지 않는다', () => {
+    const a = account({ id: 'a', balance: 0, monthlyDeposit: 500_000 });
+    // 1/15 -> 2/14는 아직 한 달이 안 됐다.
+    expect(projectBalance(a, '2026-01-15', '2026-02-14').deposits).toBe(0);
+    expect(projectBalance(a, '2026-01-15', '2026-02-15').deposits).toBe(500_000);
+  });
+
+  it('기존 잔액에 단리로 일할 이자를 붙인다', () => {
+    // 1,000만원, 연 4% -> 1년이면 40만원.
+    const a = account({ id: 'a', balance: 10_000_000, interestRate: 4 });
+    const p = projectBalance(a, '2026-01-01', '2027-01-01');
+    expect(p.interest).toBe(400_000);
+  });
+
+  it('반년이면 이자도 절반이다', () => {
+    const a = account({ id: 'a', balance: 10_000_000, interestRate: 4 });
+    const p = projectBalance(a, '2026-01-01', '2026-07-02');
+    // 182일 / 365 * 40만원
+    expect(p.interest).toBeCloseTo((400_000 * 182) / 365, 0);
+  });
+
+  it('부채는 추정하지 않는다', () => {
+    // 상환 계획을 모르는 채로 빚을 불리면 사용자가 입력한 적 없는 숫자가 된다.
+    const loan = account({
+      id: 'l',
+      balance: 10_000_000,
+      side: 'liability',
+      kind: 'loan',
+      interestRate: 5,
+      monthlyDeposit: 100_000,
+    });
+    const p = projectBalance(loan, '2026-01-01', '2027-01-01');
+
+    expect(p.total).toBe(10_000_000);
+    expect(p.hasProjection).toBe(false);
+  });
+
+  it('금리도 납입액도 없으면 기록값 그대로다', () => {
+    const a = account({ id: 'a', balance: 5_000_000 });
+    const p = projectBalance(a, '2026-01-01', '2027-01-01');
+
+    expect(p.total).toBe(5_000_000);
+    expect(p.hasProjection).toBe(false);
+  });
+
+  it('기록 날짜가 오늘이면 아무것도 더하지 않는다', () => {
+    const a = account({ id: 'a', balance: 5_000_000, interestRate: 4, monthlyDeposit: 500_000 });
+    const p = projectBalance(a, '2026-08-17', '2026-08-17');
+
+    expect(p.total).toBe(5_000_000);
+    expect(p.days).toBe(0);
+  });
+
+  it('잔액을 다시 기록하면 추정이 처음부터 다시 쌓인다', () => {
+    // 이중 계산이 생기지 않는지 확인한다. 기준이 늘 '마지막 기록'이므로
+    // 1년치 이자가 붙은 뒤 실제 잔액을 넣으면 그 시점부터 0에서 시작해야 한다.
+    const before = account({ id: 'a', balance: 10_000_000, interestRate: 4 });
+    expect(projectBalance(before, '2026-01-01', '2027-01-01').interest).toBe(400_000);
+
+    // 사용자가 2027-01-01에 실제 잔액 1,040만원을 입력했다.
+    const after = account({ id: 'a', balance: 10_400_000, interestRate: 4 });
+    const p = projectBalance(after, '2027-01-01', '2027-01-01');
+
+    expect(p.interest).toBe(0);
+    expect(p.total).toBe(10_400_000);
+  });
+
+  it('납입금에도 들어간 날부터 이자가 붙는다', () => {
+    // 잔액 0, 매달 100만원, 연 12%(월 1%).
+    // 3개월 뒤: 첫 납입은 2개월, 둘째는 1개월, 셋째는 0개월치 이자.
+    const a = account({ id: 'a', balance: 0, monthlyDeposit: 1_000_000, interestRate: 12 });
+    const p = projectBalance(a, '2026-01-01', '2026-04-01');
+
+    expect(p.deposits).toBe(3_000_000);
+    // 대략 100만 × 1% × (2 + 1) = 3만원 언저리
+    expect(p.interest).toBeGreaterThan(20_000);
+    expect(p.interest).toBeLessThan(40_000);
+  });
+});
+
+describe('lastRecordDate', () => {
+  it('가장 최근 기록 날짜를 쓴다', () => {
+    const a = account({ id: 'a', balance: 0 });
+    const snaps = [
+      snapshot('a', '2026-03-01', 100),
+      snapshot('a', '2026-05-01', 200),
+      snapshot('b', '2026-09-01', 300),
+    ];
+    expect(lastRecordDate(a, snaps)).toBe('2026-05-01');
+  });
+
+  it('기록이 없으면 계좌를 만든 날을 쓴다', () => {
+    const a = account({ id: 'a', balance: 0, createdAt: '2026-02-10T09:00:00.000Z' });
+    expect(lastRecordDate(a, [])).toBe('2026-02-10');
+  });
+});
+
+describe('netWorth (예상 잔액 반영)', () => {
+  it('예상 잔액을 넘기면 그 값으로 계산한다', () => {
+    const accounts = [
+      account({ id: 'a', balance: 1_000_000 }),
+      account({ id: 'b', balance: 2_000_000, side: 'liability', kind: 'loan' }),
+    ];
+    const balances = new Map([
+      ['a', { recorded: 1_000_000, deposits: 500_000, interest: 10_000, total: 1_510_000, days: 30, hasProjection: true }],
+    ]);
+
+    // a는 예상값, b는 넘기지 않았으므로 기록값을 쓴다.
+    expect(netWorth(accounts, balances).net).toBe(1_510_000 - 2_000_000);
+  });
+
+  it('안 넘기면 기존처럼 기록값만 쓴다', () => {
+    const accounts = [account({ id: 'a', balance: 1_000_000 })];
+    expect(netWorth(accounts).net).toBe(1_000_000);
   });
 });

@@ -2,7 +2,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import type { AppData } from '../types';
+import type { AppData, Category } from '../types';
 import { SCHEMA_VERSION, initialData } from './defaults';
 
 const STORAGE_KEY = 'habitus.appdata.v1';
@@ -44,9 +44,24 @@ export function migrate(raw: unknown): AppData {
     accounts: Array.isArray(d.accounts) ? d.accounts : [],
     snapshots: Array.isArray(d.snapshots) ? d.snapshots : [],
     transactions: Array.isArray(d.transactions) ? d.transactions : [],
-    categories:
-      Array.isArray(d.categories) && d.categories.length > 0 ? d.categories : base.categories,
+    categories: mergeCategories(d.categories),
   };
+}
+
+/**
+ * 저장된 카테고리에 새로 생긴 기본 카테고리를 더한다.
+ *
+ * 앱을 업데이트하면서 기본 카테고리를 추가해도, 이미 쓰고 있던 사용자에게는
+ * 저장된 목록이 있어서 새 항목이 보이지 않는다. id로 비교해 없는 것만 넣는다.
+ * 사용자가 숨기거나 이름을 바꾼 카테고리는 그대로 둔다.
+ */
+function mergeCategories(saved: Category[] | undefined): Category[] {
+  const defaults = initialData().categories;
+  if (!Array.isArray(saved) || saved.length === 0) return defaults;
+
+  const existing = new Set(saved.map((c) => c.id));
+  const added = defaults.filter((c) => !existing.has(c.id));
+  return added.length > 0 ? [...saved, ...added] : saved;
 }
 
 /**

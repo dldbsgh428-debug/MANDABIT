@@ -109,7 +109,7 @@ export default function GoalScreen() {
       {useDeadline ? (
         <Field label="목표 시한">
           {/* 시한은 미래 날짜라 '오늘/어제' 빠른 선택이 의미가 없다. */}
-          <DateField value={deadline} onChange={setDeadline} quickPicks={false} />
+          <DateField value={deadline} onChange={setDeadline} quickPicks={false} future />
         </Field>
       ) : null}
 

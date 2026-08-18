@@ -29,10 +29,16 @@ export function DateField({
   value,
   onChange,
   quickPicks = true,
+  future = false,
 }: {
   value: ISODate;
   onChange: (date: ISODate) => void;
   quickPicks?: boolean;
+  /**
+   * 미래 날짜를 고르는 필드인지. 목표 시한처럼 앞날을 정하는 곳에 쓴다.
+   * 기본값(false)은 거래·잔액 기록처럼 지나간 날짜만 허용한다.
+   */
+  future?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const now = today();
@@ -74,7 +80,9 @@ export function DateField({
           // iOS는 인라인 스피너, 안드로이드는 기본 다이얼로그가 자연스럽다.
           display={Platform.OS === 'ios' ? 'spinner' : 'default'}
           themeVariant="dark"
-          maximumDate={new Date()}
+          // 지난 일을 기록하는 필드는 미래를, 앞날을 정하는 필드는 과거를 막는다.
+          maximumDate={future ? undefined : new Date()}
+          minimumDate={future ? new Date() : undefined}
           onChange={(event, selected) => {
             // 안드로이드는 선택/취소 후 스스로 닫히지 않으므로 직접 닫는다.
             if (Platform.OS === 'android') setOpen(false);

@@ -10,6 +10,7 @@ import { BarChart, DonutChart, LineChart, ProgressRing } from '../../src/compone
 import { Card, DeltaBadge, Divider, SectionHeader } from '../../src/components/ui';
 import {
   assetAllocation,
+  currentBalances,
   forecastGoal,
   monthlyCashflow,
   netWorthSeries,
@@ -34,7 +35,18 @@ export default function Dashboard() {
 
   const view = useMemo(() => {
     const month = currentMonth();
-    const series = netWorthSeries(data.accounts, data.snapshots, seriesStartMonth(data, 12), month);
+    const balances = currentBalances(
+      data.accounts,
+      data.snapshots,
+      data.settings.projectBalances,
+    );
+    const series = netWorthSeries(
+      data.accounts,
+      data.snapshots,
+      seriesStartMonth(data, 12),
+      month,
+      balances,
+    );
     const forecast = forecastGoal(
       series,
       data.settings.goalAmount,
@@ -42,7 +54,7 @@ export default function Dashboard() {
     );
     const required = requiredMonthlySaving(forecast.remaining, data.settings.goalDeadline);
     const cashflow = monthlyCashflow(data.transactions, month);
-    const allocation = assetAllocation(data.accounts);
+    const allocation = assetAllocation(data.accounts, balances);
     const current = series.length > 0 ? series[series.length - 1] : null;
     const elapsedMonths = monthsBetween(monthOf(data.settings.startDate), month);
 

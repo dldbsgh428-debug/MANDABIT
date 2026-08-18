@@ -26,6 +26,7 @@ const defaultCategories: Category[] = [
   { id: 'exp-shopping', name: '쇼핑', type: 'expense', emoji: '🛍️', isDefault: true },
   { id: 'exp-culture', name: '문화·여가', type: 'expense', emoji: '🎬', isDefault: true },
   { id: 'exp-social', name: '경조사', type: 'expense', emoji: '💐', isDefault: true },
+  { id: 'exp-meeting', name: '모임·회비', type: 'expense', emoji: '🍻', isDefault: true },
   { id: 'exp-insurance', name: '보험', type: 'expense', emoji: '🛡️', isDefault: true },
   { id: 'exp-etc', name: '기타지출', type: 'expense', emoji: '➖', isDefault: true },
 ];
@@ -39,6 +40,7 @@ export function initialData(): AppData {
       monthlySavingTarget: 0,
       startDate: today(),
       showForecastLine: true,
+      projectBalances: true,
     },
     accounts: [],
     snapshots: [],

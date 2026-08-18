@@ -31,6 +31,9 @@ export default function AccountEditScreen() {
   const [name, setName] = useState(existing?.name ?? '');
   const [balance, setBalanceInput] = useState(existing ? String(existing.balance) : '');
   const [rate, setRate] = useState(existing?.interestRate ? String(existing.interestRate) : '');
+  const [deposit, setDeposit] = useState(
+    existing?.monthlyDeposit ? String(existing.monthlyDeposit) : '',
+  );
   const [memo, setMemo] = useState(existing?.memo ?? '');
   const [include, setInclude] = useState(existing?.includeInNetWorth ?? true);
 
@@ -54,6 +57,7 @@ export default function AccountEditScreen() {
 
     const amount = parseAmount(balance);
     const interestRate = rate ? Number(rate) : undefined;
+    const monthlyDeposit = parseAmount(deposit) || undefined;
 
     if (existing) {
       updateAccount(existing.id, {
@@ -62,6 +66,7 @@ export default function AccountEditScreen() {
         kind,
         includeInNetWorth: include,
         interestRate: Number.isFinite(interestRate) ? interestRate : undefined,
+        monthlyDeposit,
         memo: memo.trim() || undefined,
       });
       // 잔액이 바뀌었으면 잔액 기록도 함께 남긴다(추이 그래프의 데이터가 된다).
@@ -74,6 +79,7 @@ export default function AccountEditScreen() {
         balance: amount,
         includeInNetWorth: include,
         interestRate: Number.isFinite(interestRate) ? interestRate : undefined,
+        monthlyDeposit,
         memo: memo.trim() || undefined,
       });
     }
@@ -136,9 +142,21 @@ export default function AccountEditScreen() {
         <AmountInput value={balance} onChangeText={setBalanceInput} />
       </Field>
 
-      <Field label="금리 (선택)" hint="연이율 %. 기록용이며 계산에는 쓰이지 않습니다.">
+      <Field
+        label="금리 (선택)"
+        hint="연이율 %. 예상 잔액 증가를 켜면 이 값으로 이자를 계산합니다."
+      >
         <Input value={rate} onChangeText={setRate} placeholder="3.5" keyboardType="decimal-pad" />
       </Field>
+
+      {side === 'asset' ? (
+        <Field
+          label="월 납입액 (선택)"
+          hint="적금처럼 매달 자동이체되는 금액. 마지막 기록 이후 지난 개월수만큼 더해 보여줍니다."
+        >
+          <AmountInput value={deposit} onChangeText={setDeposit} />
+        </Field>
+      ) : null}
 
       <Field label="메모 (선택)">
         <Input value={memo} onChangeText={setMemo} placeholder="만기일, 용도 등" multiline />

@@ -6,7 +6,7 @@ import React, { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Card, EmptyState } from '../../src/components/ui';
-import { netWorth } from '../../src/lib/analytics';
+import { currentBalances, netWorth, type Projection } from '../../src/lib/analytics';
 import { shortWon, won } from '../../src/lib/money';
 import { useStore } from '../../src/store/StoreProvider';
 import { accountKindMeta, colors, font, radius, spacing } from '../../src/theme';
@@ -16,14 +16,23 @@ export default function AccountsScreen() {
   const router = useRouter();
   const { data } = useStore();
 
-  const { assets, liabilities, summary } = useMemo(() => {
-    const sorted = [...data.accounts].sort((a, b) => b.balance - a.balance);
+  const { assets, liabilities, summary, balances } = useMemo(() => {
+    const projected = currentBalances(
+      data.accounts,
+      data.snapshots,
+      data.settings.projectBalances,
+    );
+    // 예상 잔액 기준으로 정렬해야 목록 순서와 표시 금액이 어긋나지 않는다.
+    const sorted = [...data.accounts].sort(
+      (a, b) => (projected.get(b.id)?.total ?? b.balance) - (projected.get(a.id)?.total ?? a.balance),
+    );
     return {
       assets: sorted.filter((a) => a.side === 'asset'),
       liabilities: sorted.filter((a) => a.side === 'liability'),
-      summary: netWorth(data.accounts),
+      summary: netWorth(data.accounts, projected),
+      balances: projected,
     };
-  }, [data.accounts]);
+  }, [data.accounts, data.snapshots, data.settings.projectBalances]);
 
   return (
     <View style={styles.screen}>
@@ -64,6 +73,7 @@ export default function AccountsScreen() {
               title="자산"
               accounts={assets}
               total={summary.assets}
+              balances={balances}
               onPress={(id) => router.push(`/account/${id}`)}
             />
             {liabilities.length > 0 ? (
@@ -71,6 +81,7 @@ export default function AccountsScreen() {
                 title="부채"
                 accounts={liabilities}
                 total={summary.liabilities}
+                balances={balances}
                 negative
                 onPress={(id) => router.push(`/account/${id}`)}
               />
@@ -94,12 +105,14 @@ function AccountGroup({
   title,
   accounts,
   total,
+  balances,
   negative,
   onPress,
 }: {
   title: string;
   accounts: Account[];
   total: number;
+  balances: Map<string, Projection>;
   negative?: boolean;
   onPress: (id: string) => void;
 }) {
@@ -118,6 +131,8 @@ function AccountGroup({
       <Card style={{ padding: 0 }}>
         {accounts.map((account, i) => {
           const meta = accountKindMeta[account.kind] ?? { label: '기타', emoji: '📦' };
+          const projection = balances.get(account.id);
+          const amount = projection?.total ?? account.balance;
           return (
             <Pressable
               key={account.id}
@@ -143,12 +158,13 @@ function AccountGroup({
                 <Text style={styles.accountKind}>
                   {meta.label}
                   {account.interestRate ? ` · ${account.interestRate}%` : ''}
+                  {projection?.hasProjection ? ' · 예상' : ''}
                 </Text>
               </View>
               <View style={styles.accountRight}>
                 <Text style={[styles.accountBalance, negative && { color: colors.down }]}>
-                  {negative && account.balance > 0 ? '-' : ''}
-                  {won(account.balance)}
+                  {negative && amount > 0 ? '-' : ''}
+                  {won(amount)}
                 </Text>
                 <Ionicons name="chevron-forward" size={16} color={colors.textFaint} />
               </View>
