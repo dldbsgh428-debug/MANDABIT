@@ -3,9 +3,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { LineChart } from '../../src/components/charts';
+import { FormScreen } from '../../src/components/FormScreen';
 import { DateField } from '../../src/components/DateField';
 import { AmountInput, Button, Card, EmptyState, Field, Input } from '../../src/components/ui';
 import { formatDateFull, today } from '../../src/lib/date';
@@ -75,7 +76,7 @@ export default function AccountDetailScreen() {
   };
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+    <FormScreen>
       <Stack.Screen
         options={{
           title: account.name,
@@ -202,13 +203,13 @@ export default function AccountDetailScreen() {
       {history.length > 0 ? (
         <Text style={styles.hint}>기록을 길게 누르면 삭제할 수 있어요.</Text>
       ) : null}
-    </ScrollView>
+    </FormScreen>
   );
 }
 
 const styles = StyleSheet.create({
+  // 계좌를 못 찾았을 때의 빈 화면에서만 쓴다(본문은 FormScreen이 배경을 깐다).
   screen: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: spacing.lg, paddingBottom: spacing.xxl },
 
   hero: { alignItems: 'center', gap: 6 },
   heroKind: { color: colors.textFaint, fontSize: font.tiny },

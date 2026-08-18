@@ -2,8 +2,9 @@
 
 import { Ionicons } from '@expo/vector-icons';
 import React, { useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { FormScreen } from '../../src/components/FormScreen';
 import {
   AmountInput,
   Button,
@@ -42,7 +43,7 @@ export default function CategoryManageScreen() {
   };
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+    <FormScreen>
       <Segmented
         value={tab}
         onChange={(v) => {
@@ -139,7 +140,7 @@ export default function CategoryManageScreen() {
       <Text style={styles.note}>
         지출 카테고리에 월 예산을 넣으면 예산 탭에서 소진율을 확인할 수 있어요.
       </Text>
-    </ScrollView>
+    </FormScreen>
   );
 }
 
@@ -203,8 +204,6 @@ function CategoryForm({
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: spacing.lg, paddingBottom: spacing.xxl },
 
   sectionTitle: {
     color: colors.text,

@@ -2,17 +2,10 @@
 
 import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { DateField } from '../src/components/DateField';
+import { FormScreen } from '../src/components/FormScreen';
 import { AmountInput, Button, Card, Field, ToggleRow } from '../src/components/ui';
 import { forecastGoal, netWorthSeries, seriesStartMonth } from '../src/lib/analytics';
 import { currentMonth, formatMonth, monthOf, monthsBetween } from '../src/lib/date';
@@ -78,98 +71,91 @@ export default function GoalScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.screen}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Field label="목표 금액">
-          <AmountInput value={goal} onChangeText={setGoal} />
+    <FormScreen>
+      <Field label="목표 금액">
+        <AmountInput value={goal} onChangeText={setGoal} />
+      </Field>
+      <View style={styles.presetRow}>
+        {GOAL_PRESETS.map((p) => {
+          const active = parseAmount(goal) === p.value;
+          return (
+            <Pressable
+              key={p.value}
+              onPress={() => setGoal(String(p.value))}
+              style={[styles.preset, active && styles.presetActive]}
+            >
+              <Text style={[styles.presetText, active && styles.presetTextActive]}>{p.label}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      <Field
+        label="월 저축 목표"
+        hint="잔액 기록이 부족할 때 이 값으로 달성 시점을 예측합니다."
+      >
+        <AmountInput value={target} onChangeText={setTarget} />
+      </Field>
+
+      <View style={styles.toggleBox}>
+        <ToggleRow
+          label="목표 시한 정하기"
+          hint="시한을 정하면 매달 필요한 저축액을 역산해 줍니다."
+          value={useDeadline}
+          onChange={setUseDeadline}
+        />
+      </View>
+
+      {useDeadline ? (
+        <Field label="목표 시한">
+          {/* 시한은 미래 날짜라 '오늘/어제' 빠른 선택이 의미가 없다. */}
+          <DateField value={deadline} onChange={setDeadline} quickPicks={false} />
         </Field>
-        <View style={styles.presetRow}>
-          {GOAL_PRESETS.map((p) => {
-            const active = parseAmount(goal) === p.value;
-            return (
-              <Pressable
-                key={p.value}
-                onPress={() => setGoal(String(p.value))}
-                style={[styles.preset, active && styles.presetActive]}
-              >
-                <Text style={[styles.presetText, active && styles.presetTextActive]}>{p.label}</Text>
-              </Pressable>
-            );
-          })}
+      ) : null}
+
+      <Field label="프로젝트 시작일" hint="대시보드의 '몇 개월째' 표시 기준입니다.">
+        <DateField value={startDate} onChange={setStartDate} quickPicks={false} />
+      </Field>
+
+      {/* 미리보기 */}
+      <Card style={{ marginBottom: spacing.xl }}>
+        <Text style={styles.previewTitle}>이렇게 계산돼요</Text>
+        <View style={styles.previewRow}>
+          <Text style={styles.previewLabel}>현재 순자산</Text>
+          <Text style={styles.previewValue}>{won(preview.net)}</Text>
         </View>
-
-        <Field
-          label="월 저축 목표"
-          hint="잔액 기록이 부족할 때 이 값으로 달성 시점을 예측합니다."
-        >
-          <AmountInput value={target} onChangeText={setTarget} />
-        </Field>
-
-        <View style={styles.toggleBox}>
-          <ToggleRow
-            label="목표 시한 정하기"
-            hint="시한을 정하면 매달 필요한 저축액을 역산해 줍니다."
-            value={useDeadline}
-            onChange={setUseDeadline}
-          />
+        <View style={styles.previewRow}>
+          <Text style={styles.previewLabel}>남은 금액</Text>
+          <Text style={styles.previewValue}>{shortWon(preview.forecast.remaining)}</Text>
         </View>
-
-        {useDeadline ? (
-          <Field label="목표 시한">
-            {/* 시한은 미래 날짜라 '오늘/어제' 빠른 선택이 의미가 없다. */}
-            <DateField value={deadline} onChange={setDeadline} quickPicks={false} />
-          </Field>
-        ) : null}
-
-        <Field label="프로젝트 시작일" hint="대시보드의 '몇 개월째' 표시 기준입니다.">
-          <DateField value={startDate} onChange={setStartDate} quickPicks={false} />
-        </Field>
-
-        {/* 미리보기 */}
-        <Card style={{ marginBottom: spacing.xl }}>
-          <Text style={styles.previewTitle}>이렇게 계산돼요</Text>
+        <View style={styles.previewRow}>
+          <Text style={styles.previewLabel}>예상 달성</Text>
+          <Text style={[styles.previewValue, { color: colors.primary }]}>
+            {preview.forecast.achieved
+              ? '달성 완료 🎉'
+              : preview.forecast.estimatedMonth
+                ? `${formatMonth(preview.forecast.estimatedMonth)} (${preview.forecast.monthsRemaining}개월)`
+                : '예측 불가'}
+          </Text>
+        </View>
+        {preview.requiredForDeadline !== null ? (
           <View style={styles.previewRow}>
-            <Text style={styles.previewLabel}>현재 순자산</Text>
-            <Text style={styles.previewValue}>{won(preview.net)}</Text>
-          </View>
-          <View style={styles.previewRow}>
-            <Text style={styles.previewLabel}>남은 금액</Text>
-            <Text style={styles.previewValue}>{shortWon(preview.forecast.remaining)}</Text>
-          </View>
-          <View style={styles.previewRow}>
-            <Text style={styles.previewLabel}>예상 달성</Text>
-            <Text style={[styles.previewValue, { color: colors.primary }]}>
-              {preview.forecast.achieved
-                ? '달성 완료 🎉'
-                : preview.forecast.estimatedMonth
-                  ? `${formatMonth(preview.forecast.estimatedMonth)} (${preview.forecast.monthsRemaining}개월)`
-                  : '예측 불가'}
+            <Text style={styles.previewLabel}>시한까지 매달</Text>
+            <Text style={[styles.previewValue, { color: colors.warn }]}>
+              {won(preview.requiredForDeadline)}
             </Text>
           </View>
-          {preview.requiredForDeadline !== null ? (
-            <View style={styles.previewRow}>
-              <Text style={styles.previewLabel}>시한까지 매달</Text>
-              <Text style={[styles.previewValue, { color: colors.warn }]}>
-                {won(preview.requiredForDeadline)}
-              </Text>
-            </View>
-          ) : useDeadline && preview.monthsToDeadline !== null && preview.monthsToDeadline <= 0 ? (
-            <Text style={styles.previewWarn}>시한을 이번 달보다 뒤로 잡아 주세요.</Text>
-          ) : null}
-        </Card>
+        ) : useDeadline && preview.monthsToDeadline !== null && preview.monthsToDeadline <= 0 ? (
+          <Text style={styles.previewWarn}>시한을 이번 달보다 뒤로 잡아 주세요.</Text>
+        ) : null}
+      </Card>
 
-        <Button title="저장" onPress={save} />
-      </ScrollView>
-    </KeyboardAvoidingView>
+      <Button title="저장" onPress={save} />
+    </FormScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: spacing.lg, paddingBottom: spacing.xxl },
 
   presetRow: {
     flexDirection: 'row',

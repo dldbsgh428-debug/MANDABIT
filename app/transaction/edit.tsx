@@ -2,18 +2,10 @@
 
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { DateField } from '../../src/components/DateField';
+import { FormScreen } from '../../src/components/FormScreen';
 import { AmountInput, Button, Field, Input, Segmented } from '../../src/components/ui';
 import { today } from '../../src/lib/date';
 import { parseAmount } from '../../src/lib/money';
@@ -87,101 +79,94 @@ export default function TransactionEditScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.screen}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Field label="구분">
-          <Segmented
-            value={type}
-            onChange={changeType}
-            options={[
-              { value: 'expense', label: '지출', color: colors.down },
-              { value: 'income', label: '수입', color: colors.up },
-            ]}
-          />
-        </Field>
+    <FormScreen>
+      <Field label="구분">
+        <Segmented
+          value={type}
+          onChange={changeType}
+          options={[
+            { value: 'expense', label: '지출', color: colors.down },
+            { value: 'income', label: '수입', color: colors.up },
+          ]}
+        />
+      </Field>
 
-        <Field label="금액">
-          <AmountInput value={amount} onChangeText={setAmount} />
-        </Field>
+      <Field label="금액">
+        <AmountInput value={amount} onChangeText={setAmount} />
+      </Field>
 
-        <Field label="날짜">
-          <DateField value={date} onChange={setDate} />
-        </Field>
+      <Field label="날짜">
+        <DateField value={date} onChange={setDate} />
+      </Field>
 
-        <Field label="카테고리">
+      <Field label="카테고리">
+        <View style={styles.grid}>
+          {categories.map((c) => {
+            const active = c.id === categoryId;
+            return (
+              <Pressable
+                key={c.id}
+                onPress={() => setCategoryId(c.id)}
+                style={[styles.gridItem, active && styles.gridItemActive]}
+              >
+                <Text style={styles.gridEmoji}>{c.emoji}</Text>
+                <Text style={[styles.gridLabel, active && styles.gridLabelActive]} numberOfLines={1}>
+                  {c.name}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </Field>
+
+      {data.accounts.length > 0 ? (
+        <Field label="계좌 (선택)" hint="어느 계좌에서 오갔는지 메모용으로 남깁니다.">
           <View style={styles.grid}>
-            {categories.map((c) => {
-              const active = c.id === categoryId;
+            {data.accounts.map((a) => {
+              const active = a.id === accountId;
               return (
                 <Pressable
-                  key={c.id}
-                  onPress={() => setCategoryId(c.id)}
-                  style={[styles.gridItem, active && styles.gridItemActive]}
+                  key={a.id}
+                  // 이미 선택된 것을 다시 누르면 선택 해제한다.
+                  onPress={() => setAccountId(active ? undefined : a.id)}
+                  style={[styles.accountChip, active && styles.gridItemActive]}
                 >
-                  <Text style={styles.gridEmoji}>{c.emoji}</Text>
                   <Text style={[styles.gridLabel, active && styles.gridLabelActive]} numberOfLines={1}>
-                    {c.name}
+                    {a.name}
                   </Text>
                 </Pressable>
               );
             })}
           </View>
         </Field>
+      ) : null}
 
-        {data.accounts.length > 0 ? (
-          <Field label="계좌 (선택)" hint="어느 계좌에서 오갔는지 메모용으로 남깁니다.">
-            <View style={styles.grid}>
-              {data.accounts.map((a) => {
-                const active = a.id === accountId;
-                return (
-                  <Pressable
-                    key={a.id}
-                    // 이미 선택된 것을 다시 누르면 선택 해제한다.
-                    onPress={() => setAccountId(active ? undefined : a.id)}
-                    style={[styles.accountChip, active && styles.gridItemActive]}
-                  >
-                    <Text style={[styles.gridLabel, active && styles.gridLabelActive]} numberOfLines={1}>
-                      {a.name}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </Field>
-        ) : null}
+      <Field label="메모 (선택)">
+        <Input value={memo} onChangeText={setMemo} placeholder="예: 점심 회식" />
+      </Field>
 
-        <Field label="메모 (선택)">
-          <Input value={memo} onChangeText={setMemo} placeholder="예: 점심 회식" />
-        </Field>
+      <Button title={existing ? '수정 저장' : '저장'} onPress={save} />
 
-        <Button title={existing ? '수정 저장' : '저장'} onPress={save} />
+      {existing ? (
+        <Button
+          title="삭제"
+          variant="danger"
+          onPress={confirmRemove}
+          style={{ marginTop: spacing.sm }}
+        />
+      ) : null}
 
-        {existing ? (
-          <Button
-            title="삭제"
-            variant="danger"
-            onPress={confirmRemove}
-            style={{ marginTop: spacing.sm }}
-          />
-        ) : null}
-
-        {categories.length === 0 ? (
-          <Text style={styles.warn}>
-            사용할 수 있는 {type === 'expense' ? '지출' : '수입'} 카테고리가 없습니다. 설정 &gt;
-            카테고리 관리에서 추가해 주세요.
-          </Text>
-        ) : null}
-      </ScrollView>
-    </KeyboardAvoidingView>
+      {categories.length === 0 ? (
+        <Text style={styles.warn}>
+          사용할 수 있는 {type === 'expense' ? '지출' : '수입'} 카테고리가 없습니다. 설정 &gt;
+          카테고리 관리에서 추가해 주세요.
+        </Text>
+      ) : null}
+    </FormScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: spacing.lg, paddingBottom: spacing.xxl },
 
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   gridItem: {
