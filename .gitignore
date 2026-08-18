@@ -39,3 +39,6 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# 아이콘 생성 스크립트를 돌리면 생긴다
+__pycache__/
