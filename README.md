@@ -34,22 +34,121 @@
 - 모든 데이터는 기기 안(AsyncStorage)에만 저장. 서버·로그인 없음
 - JSON 파일로 백업 내보내기 / 복원
 
-## 실행
+## 폰에서 실행하기
+
+### 0. 준비물 (처음 한 번만)
+
+- **Node.js 20 이상** — [nodejs.org](https://nodejs.org)에서 LTS 버전 설치.
+  설치 확인: 터미널에 `node -v` → `v20.x` 이상이면 OK
+- **Git** — [git-scm.com](https://git-scm.com)
+- **Expo Go 앱** — 폰에 설치. [expo.dev/go](https://expo.dev/go)
+  (App Store / Play 스토어에서 "Expo Go" 검색해도 됩니다)
+
+> 터미널은 Windows면 **PowerShell**, macOS면 **터미널** 앱을 씁니다.
+
+### 1. 코드 받아서 준비
 
 ```bash
+git clone -b claude/asset-management-app-4pl2nt https://github.com/dldbsgh428-debug/HABITUS.git
+cd HABITUS
 npm install
-npm start
 ```
 
-터미널에 나오는 QR 코드를 [Expo Go](https://expo.dev/go) 앱으로 스캔하면 폰에서 바로 실행됩니다.
+`npm install`은 처음에 2~3분 걸립니다. 경고(warning)가 몇 줄 나오는 건 정상입니다.
+
+### 2. 서버 켜기
+
+같은 Wi-Fi에 폰과 컴퓨터가 있다면 이것만으로 됩니다:
 
 ```bash
-npm run android   # 안드로이드 에뮬레이터/기기
-npm run ios       # iOS 시뮬레이터 (macOS 필요)
-npm run web       # 브라우저에서 확인
+npx expo start
 ```
 
-### 검증
+**안 되면 터널을 씁니다** (아래 "터널" 항목 참고):
+
+```bash
+npx expo start --tunnel
+```
+
+### 3. QR 스캔
+
+터미널에 QR 코드가 그려지고 그 아래 주소가 뜹니다.
+
+- **아이폰** — 기본 **카메라** 앱으로 QR을 비추면 상단에 배너가 뜹니다. 그걸 탭
+- **안드로이드** — **Expo Go** 앱을 열고 `Scan QR code` 메뉴로 스캔
+
+처음 열 때 자바스크립트를 내려받느라 10~30초 걸립니다.
+
+끄려면 터미널에서 `Ctrl + C`.
+
+## 터널
+
+### 터널이 뭔가요
+
+기본 방식(`npx expo start`)은 **폰이 같은 Wi-Fi를 통해 내 컴퓨터에 직접 접속**합니다.
+그래서 아래 상황에서는 연결이 안 됩니다.
+
+- 폰은 LTE·5G를 쓰고 컴퓨터는 Wi-Fi인 경우
+- 회사·학교·카페 Wi-Fi처럼 기기끼리의 통신을 막아둔 망
+- Windows 방화벽이 Node.js를 막고 있는 경우
+
+`--tunnel`을 붙이면 외부 중계 서버(ngrok)를 거쳐 연결하므로 **네트워크가 서로 달라도**
+동작합니다. 대신 중계를 거치니 조금 느립니다.
+
+### 터널 여는 법
+
+```bash
+npx expo start --tunnel
+```
+
+**처음 실행하면** 이렇게 물어봅니다:
+
+```
+The package @expo/ngrok@^4.1.0 is required to use tunnels,
+would you like to install it globally? › (Y/n)
+```
+
+`y`를 누르고 Enter → 자동으로 설치됩니다. 한 번 설치하면 다음부터는 안 물어봅니다.
+
+설치가 끝나면 잠시 뒤 `exp://....exp.direct` 형태의 주소와 QR이 뜹니다.
+이 QR을 스캔하면 됩니다.
+
+### 터널이 안 될 때
+
+| 증상 | 해결 |
+|---|---|
+| `ngrok tunnel took too long to connect` | 인터넷 연결 확인 후 재시도. 회사망이면 ngrok 자체가 차단됐을 수 있습니다 — 폰 핫스팟에 컴퓨터를 연결하고 `npx expo start`(터널 없이) 사용 |
+| 설치 여부를 묻지 않고 바로 실패 | `npm install -g @expo/ngrok`로 직접 설치 후 재시도 |
+| QR은 떴는데 앱에서 계속 로딩 | 터미널에서 `Ctrl + C` 후 `npx expo start --tunnel --clear`로 캐시 비우고 재시작 |
+| 폰과 컴퓨터가 같은 Wi-Fi인데도 안 됨 | Windows 방화벽에서 Node.js의 사설망 접근을 허용하거나, 그냥 `--tunnel` 사용 |
+
+### 가장 확실한 대안: 폰 핫스팟
+
+터널이 계속 막히면 이 방법이 제일 잘 됩니다.
+
+1. 폰에서 핫스팟(테더링)을 켠다
+2. 컴퓨터를 그 핫스팟에 연결한다
+3. `npx expo start` (터널 없이)
+
+이러면 폰과 컴퓨터가 같은 망에 있게 되어 중계 서버가 필요 없습니다.
+
+## 컴퓨터에서만 확인하기
+
+폰 없이 브라우저로 화면을 훑어볼 수도 있습니다.
+
+```bash
+npm run web
+```
+
+단, 웹에서는 **날짜 선택기가 동작하지 않습니다**(네이티브 전용 모듈이라 iOS·안드로이드에서만
+뜹니다). 화면 구성과 차트를 보는 용도로만 쓰세요.
+
+```bash
+npm run android   # 안드로이드 에뮬레이터
+npm run ios       # iOS 시뮬레이터 (macOS 필요)
+```
+
+## 검증
 
 ```bash
 npm run typecheck   # tsc --noEmit
