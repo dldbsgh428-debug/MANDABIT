@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "HABITUS",
-    "slug": "habitus",
-    "scheme": "habitus",
+    "name": "moa",
+    "slug": "moa",
+    "scheme": "moa",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -11,10 +11,10 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.habitus.money"
+      "bundleIdentifier": "com.moa.money"
     },
     "android": {
-      "package": "com.habitus.money",
+      "package": "com.moa.money",
       "adaptiveIcon": {
         "backgroundColor": "#0B0E14",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -27,6 +27,8 @@
       "favicon": "./assets/favicon.png",
       "bundler": "metro"
     },
-    "plugins": ["expo-router"]
+    "plugins": [
+      "expo-router"
+    ]
   }
 }
