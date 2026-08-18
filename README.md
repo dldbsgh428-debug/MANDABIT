@@ -174,11 +174,24 @@ would you like to install it globally? › (Y/n)
    eas init
    ```
 
-4. APK 빌드:
+4. 빌드 전 점검 (권장):
+
+   ```bash
+   npx expo-doctor
+   ```
+
+   `Missing peer dependency` 같은 경고가 나오면 먼저 해결하세요. Expo Go에서는
+   문제없이 돌아가지만 빌드된 앱에서만 죽는 종류의 문제를 여기서 잡아냅니다.
+   (예: `@expo/vector-icons`는 `expo-font`가 없으면 APK에서 크래시합니다)
+
+5. APK 빌드:
 
    ```bash
    eas build --platform android --profile preview
    ```
+
+   중간에 `Generate a new Android Keystore?`를 물으면 **y**를 누르세요.
+   앱 서명 키를 Expo가 만들어 보관해 줍니다.
 
    Expo 서버에서 10~20분간 빌드하고, 끝나면 **다운로드 링크**를 알려줍니다.
    그 링크를 폰으로 열어 APK를 받아 설치하면 됩니다.
