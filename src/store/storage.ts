@@ -45,6 +45,7 @@ export function migrate(raw: unknown): AppData {
     snapshots: Array.isArray(d.snapshots) ? d.snapshots : [],
     transactions: Array.isArray(d.transactions) ? d.transactions : [],
     categories: mergeCategories(d.categories),
+    recurring: Array.isArray(d.recurring) ? d.recurring : [],
   };
 }
 

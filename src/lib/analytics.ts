@@ -12,6 +12,7 @@ import type {
   BalanceSnapshot,
   Category,
   MonthKey,
+  RecurringExpense,
   Transaction,
   TxType,
 } from '../types';
@@ -489,4 +490,54 @@ export function assetAllocation(
     });
   }
   return out.sort((a, b) => b.amount - a.amount);
+}
+
+/* ----------------------------------------------------------- 고정지출 */
+
+export interface RecurringStatus {
+  expense: RecurringExpense;
+  /** 이번 달에 이미 가계부에 기록됐는지. */
+  recorded: boolean;
+  /** 이번 달 결제 예정일 'YYYY-MM-DD'. 그 달에 없는 날이면 말일. */
+  dueDate: ISODate;
+}
+
+/**
+ * 고정지출이 해당 월에 이미 기록됐는지 판정한다.
+ *
+ * '같은 카테고리 + 같은 금액'이 그 달에 있으면 기록된 것으로 본다.
+ * 거래에 고정지출 id를 심지 않는 이유는, 사용자가 가계부에서 직접 입력한
+ * 월세도 기록으로 인정해야 중복 입력을 막을 수 있기 때문이다.
+ */
+export function recurringStatus(
+  recurring: RecurringExpense[],
+  transactions: Transaction[],
+  month: MonthKey,
+): RecurringStatus[] {
+  return recurring
+    .filter((r) => r.active)
+    .map((r) => ({
+      expense: r,
+      dueDate: dueDateIn(month, r.dayOfMonth),
+      recorded: transactions.some(
+        (t) =>
+          t.type === 'expense' &&
+          monthOf(t.date) === month &&
+          t.categoryId === r.categoryId &&
+          t.amount === r.amount,
+      ),
+    }))
+    .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+}
+
+/** 해당 월의 결제일. 31일 설정인데 2월이면 말일(28/29일)로 당긴다. */
+export function dueDateIn(month: MonthKey, dayOfMonth: number): ISODate {
+  const last = Number(endOfMonth(month).slice(-2));
+  const day = Math.min(Math.max(1, dayOfMonth), last);
+  return `${month}-${String(day).padStart(2, '0')}`;
+}
+
+/** 활성 고정지출의 월 합계. */
+export function recurringTotal(recurring: RecurringExpense[]): number {
+  return recurring.filter((r) => r.active).reduce((sum, r) => sum + r.amount, 0);
 }

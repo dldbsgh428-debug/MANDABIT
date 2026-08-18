@@ -18,9 +18,18 @@ import {
   netWorth,
   netWorthAt,
   netWorthSeries,
+  recurringStatus,
+  recurringTotal,
+  dueDateIn,
   requiredMonthlySaving,
 } from '../analytics';
-import type { Account, BalanceSnapshot, Category, Transaction } from '../../types';
+import type {
+  Account,
+  BalanceSnapshot,
+  Category,
+  RecurringExpense,
+  Transaction,
+} from '../../types';
 
 beforeAll(() => {
   jest.useFakeTimers();
@@ -540,5 +549,101 @@ describe('netWorth (예상 잔액 반영)', () => {
   it('안 넘기면 기존처럼 기록값만 쓴다', () => {
     const accounts = [account({ id: 'a', balance: 1_000_000 })];
     expect(netWorth(accounts).net).toBe(1_000_000);
+  });
+});
+
+/* ------------------------------------------------------------- 고정지출 */
+
+function recurring(over: Partial<RecurringExpense> & { id: string; amount: number }): RecurringExpense {
+  return {
+    name: over.id,
+    categoryId: 'exp-house',
+    dayOfMonth: 25,
+    active: true,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    ...over,
+  };
+}
+
+describe('dueDateIn', () => {
+  it('해당 월의 결제일을 만든다', () => {
+    expect(dueDateIn('2026-08', 25)).toBe('2026-08-25');
+  });
+
+  it('그 달에 없는 날이면 말일로 당긴다', () => {
+    // 31일 설정인데 2월은 28일까지밖에 없다.
+    expect(dueDateIn('2026-02', 31)).toBe('2026-02-28');
+    expect(dueDateIn('2028-02', 31)).toBe('2028-02-29'); // 윤년
+    expect(dueDateIn('2026-04', 31)).toBe('2026-04-30');
+  });
+
+  it('범위를 벗어난 값도 안전하게 자른다', () => {
+    expect(dueDateIn('2026-08', 0)).toBe('2026-08-01');
+    expect(dueDateIn('2026-08', 99)).toBe('2026-08-31');
+  });
+});
+
+describe('recurringTotal', () => {
+  it('활성 항목만 더한다', () => {
+    const total = recurringTotal([
+      recurring({ id: 'r1', amount: 680_000 }),
+      recurring({ id: 'r2', amount: 55_000 }),
+      recurring({ id: 'r3', amount: 999_999, active: false }),
+    ]);
+    expect(total).toBe(735_000);
+  });
+
+  it('비어 있으면 0이다', () => {
+    expect(recurringTotal([])).toBe(0);
+  });
+});
+
+describe('recurringStatus', () => {
+  const items = [
+    recurring({ id: 'rent', amount: 680_000, categoryId: 'exp-house', dayOfMonth: 5 }),
+    recurring({ id: 'phone', amount: 55_000, categoryId: 'exp-comm', dayOfMonth: 25 }),
+    recurring({ id: 'paused', amount: 10_000, categoryId: 'exp-sub', active: false }),
+  ];
+
+  it('꺼둔 항목은 빼고 결제일 순으로 준다', () => {
+    const rows = recurringStatus(items, [], '2026-08');
+
+    expect(rows.map((r) => r.expense.id)).toEqual(['rent', 'phone']);
+    expect(rows[0].dueDate).toBe('2026-08-05');
+    expect(rows[1].dueDate).toBe('2026-08-25');
+  });
+
+  it('같은 카테고리·같은 금액이 그 달에 있으면 기록된 것으로 본다', () => {
+    const txs = [
+      tx({ type: 'expense', amount: 680_000, categoryId: 'exp-house', date: '2026-08-05' }),
+    ];
+    const rows = recurringStatus(items, txs, '2026-08');
+
+    expect(rows.find((r) => r.expense.id === 'rent')?.recorded).toBe(true);
+    expect(rows.find((r) => r.expense.id === 'phone')?.recorded).toBe(false);
+  });
+
+  it('다른 달 거래는 이번 달 기록으로 치지 않는다', () => {
+    const txs = [
+      tx({ type: 'expense', amount: 680_000, categoryId: 'exp-house', date: '2026-07-05' }),
+    ];
+    const rows = recurringStatus(items, txs, '2026-08');
+
+    expect(rows.find((r) => r.expense.id === 'rent')?.recorded).toBe(false);
+  });
+
+  it('금액이 다르면 다른 지출로 본다', () => {
+    // 월세를 68만원이 아니라 70만원 냈다면 고정지출이 아직 안 들어간 것이다.
+    const txs = [
+      tx({ type: 'expense', amount: 700_000, categoryId: 'exp-house', date: '2026-08-05' }),
+    ];
+    expect(recurringStatus(items, txs, '2026-08')[0].recorded).toBe(false);
+  });
+
+  it('수입은 기록으로 치지 않는다', () => {
+    const txs = [
+      tx({ type: 'income', amount: 680_000, categoryId: 'exp-house', date: '2026-08-05' }),
+    ];
+    expect(recurringStatus(items, txs, '2026-08')[0].recorded).toBe(false);
   });
 });

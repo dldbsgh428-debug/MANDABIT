@@ -88,6 +88,28 @@ export interface Category {
   archived?: boolean;
 }
 
+/**
+ * 매달 같은 금액이 빠져나가는 고정지출(월세·통신비·구독료·보험료 등).
+ *
+ * 등록해두면 매달 하나씩 입력하지 않고 한 번에 가계부에 반영할 수 있다.
+ * 자동으로 거래를 만들지는 않는다. 실제로 나갔는지 확인하지 않은 지출이
+ * 쌓이면 저축률이 사실과 달라지기 때문이다.
+ */
+export interface RecurringExpense {
+  id: string;
+  name: string;
+  amount: number;
+  categoryId: string;
+  /** 매달 며칠에 빠져나가는지(1~31). 그 달에 없는 날이면 말일로 본다. */
+  dayOfMonth: number;
+  /** 어느 계좌에서 나가는지(선택). */
+  accountId?: string;
+  /** 잠시 멈춘 항목은 false. 지우지 않고 꺼두면 과거 기록이 유지된다. */
+  active: boolean;
+  memo?: string;
+  createdAt: string;
+}
+
 export interface Settings {
   /** 목표 금액. 기본값 1억원. */
   goalAmount: number;
@@ -115,4 +137,5 @@ export interface AppData {
   snapshots: BalanceSnapshot[];
   transactions: Transaction[];
   categories: Category[];
+  recurring: RecurringExpense[];
 }

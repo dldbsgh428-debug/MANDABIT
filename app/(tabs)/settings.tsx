@@ -138,6 +138,13 @@ export default function SettingsScreen() {
           value={`${data.categories.filter((c) => !c.archived).length}개`}
           onPress={() => router.push('/category/manage')}
         />
+        <Row
+          icon="repeat-outline"
+          label="고정지출 관리"
+          value={`${data.recurring.filter((r) => r.active).length}개`}
+          onPress={() => router.push('/recurring/manage')}
+          border
+        />
       </Card>
 
       <SectionHeader title="데이터" />

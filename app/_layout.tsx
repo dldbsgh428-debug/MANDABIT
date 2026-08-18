@@ -47,6 +47,7 @@ function AppShell() {
         options={{ presentation: 'modal', title: '거래 입력' }}
       />
       <Stack.Screen name="category/manage" options={{ title: '카테고리 관리' }} />
+      <Stack.Screen name="recurring/manage" options={{ title: '고정지출' }} />
       <Stack.Screen name="goal" options={{ presentation: 'modal', title: '목표 설정' }} />
     </Stack>
   );

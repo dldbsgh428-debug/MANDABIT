@@ -15,7 +15,12 @@ import {
   Field,
   SectionHeader,
 } from '../../src/components/ui';
-import { budgetStatus, monthlyCashflow } from '../../src/lib/analytics';
+import {
+  budgetStatus,
+  monthlyCashflow,
+  recurringStatus,
+  recurringTotal,
+} from '../../src/lib/analytics';
 import { currentMonth, formatMonth } from '../../src/lib/date';
 import { parseAmount, percent, percentFloor, shortWon, won } from '../../src/lib/money';
 import { useStore } from '../../src/store/StoreProvider';
@@ -36,7 +41,17 @@ export default function BudgetScreen() {
     const totalBudget = lines.reduce((sum, l) => sum + l.budget, 0);
     const totalSpent = lines.reduce((sum, l) => sum + l.spent, 0);
     const overCount = lines.filter((l) => l.usage >= 1).length;
-    return { cashflow, lines, totalBudget, totalSpent, overCount };
+    const recurringRows = recurringStatus(data.recurring, data.transactions, month);
+    return {
+      cashflow,
+      lines,
+      totalBudget,
+      totalSpent,
+      overCount,
+      recurringTotal: recurringTotal(data.recurring),
+      recurringPending: recurringRows.filter((r) => !r.recorded).length,
+      recurringCount: recurringRows.length,
+    };
   }, [data, month]);
 
   const { cashflow, lines, totalBudget, totalSpent, overCount } = view;
@@ -95,6 +110,41 @@ export default function BudgetScreen() {
             월 저축 목표를 정하면 달성률과 1억 도달 시점을 계산해 드려요. 수정을 눌러 금액을
             입력해 보세요.
           </Text>
+        )}
+      </Card>
+
+      {/* ------------------------------------------------- 고정지출 */}
+      <SectionHeader
+        title="고정지출"
+        action="관리"
+        onAction={() => router.push('/recurring/manage')}
+      />
+      <Card onPress={() => router.push('/recurring/manage')}>
+        {view.recurringCount === 0 ? (
+          <Text style={styles.placeholder}>
+            월세·통신비·구독료처럼 매달 나가는 돈을 등록해두면, 매달 하나씩 입력하지 않고 한 번에
+            기록할 수 있어요.
+          </Text>
+        ) : (
+          <>
+            <View style={styles.row}>
+              <Text style={styles.rowLabel}>매달 나가는 돈</Text>
+              <Text style={styles.rowValue}>{won(view.recurringTotal)}</Text>
+            </View>
+            <View style={styles.row}>
+              <Text style={styles.rowLabel}>이번 달 기록</Text>
+              <Text
+                style={[
+                  styles.rowValue,
+                  { color: view.recurringPending > 0 ? colors.warn : colors.up },
+                ]}
+              >
+                {view.recurringPending > 0
+                  ? `${view.recurringPending}건 대기`
+                  : `${view.recurringCount}건 완료`}
+              </Text>
+            </View>
+          </>
         )}
       </Card>
 

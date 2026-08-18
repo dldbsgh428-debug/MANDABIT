@@ -46,5 +46,6 @@ export function initialData(): AppData {
     snapshots: [],
     transactions: [],
     categories: defaultCategories,
+    recurring: [],
   };
 }

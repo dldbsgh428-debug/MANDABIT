@@ -22,6 +22,7 @@ import type {
   BalanceSnapshot,
   Category,
   ISODate,
+  RecurringExpense,
   Settings,
   Transaction,
 } from '../types';
@@ -48,6 +49,10 @@ type Action =
   | { type: 'category/add'; category: Category }
   | { type: 'category/update'; id: string; patch: Partial<Category> }
   | { type: 'category/remove'; id: string }
+  | { type: 'recurring/add'; item: RecurringExpense }
+  | { type: 'recurring/update'; id: string; patch: Partial<RecurringExpense> }
+  | { type: 'recurring/remove'; id: string }
+  | { type: 'tx/addMany'; items: Transaction[] }
   | { type: 'data/replace'; data: AppData };
 
 /** 같은 계좌·같은 날짜의 스냅샷은 덮어쓴다. 하루에 여러 번 고쳐도 기록이 지저분해지지 않는다. */
@@ -118,6 +123,23 @@ function reducer(state: AppData, action: Action): AppData {
     case 'tx/add':
       return { ...state, transactions: [action.tx, ...state.transactions] };
 
+    case 'tx/addMany':
+      return { ...state, transactions: [...action.items, ...state.transactions] };
+
+    case 'recurring/add':
+      return { ...state, recurring: [...state.recurring, action.item] };
+
+    case 'recurring/update':
+      return {
+        ...state,
+        recurring: state.recurring.map((r) =>
+          r.id === action.id ? { ...r, ...action.patch } : r,
+        ),
+      };
+
+    case 'recurring/remove':
+      return { ...state, recurring: state.recurring.filter((r) => r.id !== action.id) };
+
     case 'tx/update':
       return {
         ...state,
@@ -184,8 +206,14 @@ export interface StoreValue {
   removeSnapshot: (id: string) => void;
 
   addTransaction: (input: Omit<Transaction, 'id' | 'createdAt'>) => void;
+  /** 고정지출을 한 번에 기록할 때 쓴다. */
+  addTransactions: (inputs: Omit<Transaction, 'id' | 'createdAt'>[]) => void;
   updateTransaction: (id: string, patch: Partial<Transaction>) => void;
   removeTransaction: (id: string) => void;
+
+  addRecurring: (input: Omit<RecurringExpense, 'id' | 'createdAt'>) => void;
+  updateRecurring: (id: string, patch: Partial<RecurringExpense>) => void;
+  removeRecurring: (id: string) => void;
 
   addCategory: (input: Omit<Category, 'id'>) => void;
   updateCategory: (id: string, patch: Partial<Category>) => void;
@@ -264,6 +292,23 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           type: 'tx/add',
           tx: { ...input, id: makeId('tx'), createdAt: new Date().toISOString() },
         }),
+      addTransactions: (inputs) =>
+        dispatch({
+          type: 'tx/addMany',
+          items: inputs.map((input) => ({
+            ...input,
+            id: makeId('tx'),
+            createdAt: new Date().toISOString(),
+          })),
+        }),
+
+      addRecurring: (input) =>
+        dispatch({
+          type: 'recurring/add',
+          item: { ...input, id: makeId('rec'), createdAt: new Date().toISOString() },
+        }),
+      updateRecurring: (id, patch) => dispatch({ type: 'recurring/update', id, patch }),
+      removeRecurring: (id) => dispatch({ type: 'recurring/remove', id }),
       updateTransaction: (id, patch) => dispatch({ type: 'tx/update', id, patch }),
       removeTransaction: (id) => dispatch({ type: 'tx/remove', id }),
 
