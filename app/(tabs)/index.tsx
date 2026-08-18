@@ -1,4 +1,4 @@
-/** 대시보드: 1억 모으기 진척도가 한눈에 보이는 첫 화면. */
+/** 대시보드: 목표 진척도가 한눈에 보이는 첫 화면. */
 
 import { Ionicons } from '@expo/vector-icons';
 import { Link, useRouter } from 'expo-router';
@@ -64,7 +64,7 @@ export default function Dashboard() {
       {/* ---------------------------------------------------------- 헤더 */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.greeting}>1억 모으기</Text>
+          <Text style={styles.greeting}>moa</Text>
           <Text style={styles.headerSub}>
             {formatMonth(view.month)} · {view.elapsedMonths}개월째
           </Text>
