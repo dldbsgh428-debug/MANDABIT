@@ -188,7 +188,7 @@ def content(trim_text=False, bg_tol=34):
     # JPEG 잡티가 배경 곳곳에 점으로 남는다. 한 번 깎았다 부풀려서 지운다.
     alpha = alpha.filter(ImageFilter.MinFilter(3)).filter(ImageFilter.MaxFilter(3))
     keep = np.asarray(alpha) > 127
-    keep = drop_specks(keep, min_area=int(keep.size * 0.0002))
+    keep = drop_specks(keep, min_area=int(keep.size * 0.0008))
     alpha = Image.fromarray(np.where(keep, 255, 0).astype('uint8'), 'L') \
         .filter(ImageFilter.GaussianBlur(0.7))
 

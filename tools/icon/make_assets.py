@@ -13,7 +13,17 @@ import numpy as np
 from PIL import Image, ImageFilter
 import from_source as U
 
-SAFE = 0.66  # 적응형 아이콘 전경이 잘리지 않는 범위
+# 그림이 캔버스에서 차지할 비율. 런처가 아이콘을 원/스퀘어클로 잘라내기 때문에
+# 여백이 없으면 꽉 차 보이고 모서리가 잘린다.
+#
+# 적응형 아이콘은 108dp 캔버스 중 가운데 72dp(66%)만 보인다. 그래서 전경은
+# 0.46으로 두면 보이는 원 안에서 약 70%를 차지한다.
+ICON_FIT = 0.58
+FOREGROUND_FIT = 0.46
+FAVICON_FIT = 0.64  # 48px에서는 조금 커야 알아볼 수 있다
+SPLASH_FIT = 0.44
+
+SAFE = FOREGROUND_FIT
 TRANSPARENT = (0, 0, 0, 0)
 
 
@@ -59,14 +69,18 @@ def mono(size):
 
 if __name__ == '__main__':
     out = sys.argv[1]
-    square, cream = U.square()
+    _, cream = U.square()
     art = U.content()
 
-    save(square.convert('RGB'), f'{out}/icon.png', 1024)
-    save(square.convert('RGB'), f'{out}/favicon.png', 48)
+    # 원본 그림의 판(둥근 모서리 + 도톰한 테두리)은 쓰지 않는다. 런처가 다시
+    # 잘라내면 그 테두리가 어중간하게 남는다. 배경은 같은 크림 단색으로 깔고
+    # 그림만 얹으면 적응형 아이콘과 모양이 정확히 같아진다.
+    save(U.place(art, 1024, cream, ICON_FIT).convert('RGB'), f'{out}/icon.png', 1024)
+    save(U.place(art, 1024, cream, FAVICON_FIT).convert('RGB'), f'{out}/favicon.png', 48)
 
-    save(U.place(art, 1024, TRANSPARENT, SAFE), f'{out}/android-icon-foreground.png', 512)
+    save(U.place(art, 1024, TRANSPARENT, FOREGROUND_FIT),
+         f'{out}/android-icon-foreground.png', 512)
     save(Image.new('RGBA', (512, 512), cream), f'{out}/android-icon-background.png', 512)
     save(mono(1024), f'{out}/android-icon-monochrome.png', 432)
 
-    save(U.place(art, 1024, TRANSPARENT, SAFE), f'{out}/splash-icon.png', 1024)
+    save(U.place(art, 1024, TRANSPARENT, SPLASH_FIT), f'{out}/splash-icon.png', 1024)

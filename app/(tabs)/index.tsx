@@ -76,7 +76,7 @@ export default function Dashboard() {
       {/* ---------------------------------------------------------- 헤더 */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.greeting}>MOA</Text>
+          <Text style={styles.greeting}>모아</Text>
           <Text style={styles.headerSub}>
             {formatMonth(view.month)} · {view.elapsedMonths}개월째
           </Text>
