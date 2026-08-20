@@ -2,7 +2,8 @@
 
 import { Ionicons } from '@expo/vector-icons';
 import React, { useMemo, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { Text } from '../../src/components/Typo';
 
 import { FormScreen } from '../../src/components/FormScreen';
 import {

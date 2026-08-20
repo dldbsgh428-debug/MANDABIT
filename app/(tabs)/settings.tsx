@@ -3,7 +3,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  Alert,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
+import { Text } from '../../src/components/Typo';
 
 import { Card, SectionHeader, ToggleRow } from '../../src/components/ui';
 import { exportBackup, importBackup } from '../../src/lib/backup';

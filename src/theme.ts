@@ -1,3 +1,5 @@
+import type { TextStyle } from 'react-native';
+
 /**
  * 앱 전역 디자인 토큰.
  *
@@ -49,6 +51,31 @@ export const colors = {
     '#9AA6B5',
   ] as string[],
 };
+
+/**
+ * 글씨체.
+ *
+ * 본문과 숫자는 Pretendard. 폭이 일정해서 금액이 세로로 줄 맞춰 떨어진다.
+ * 제목은 나눔스퀘어라운드. 아이콘의 둥근 모양을 이어받는다.
+ *
+ * 파일 하나가 굵기 하나다. 이름을 직접 골라야 해서 Typo.tsx가 fontWeight를
+ * 보고 여기서 알맞은 이름을 찾아 끼운다.
+ */
+export const fonts = {
+  regular: 'Pretendard',
+  semibold: 'Pretendard-SemiBold',
+  bold: 'Pretendard-Bold',
+  /** 제목·부제용 둥근 글씨체 */
+  display: 'NanumSquareRound-Bold',
+};
+
+/** fontWeight 값에 맞는 폰트 이름. 600 이상은 굵게, 500은 중간. */
+export function familyFor(weight?: TextStyle['fontWeight']): string {
+  const n = typeof weight === 'string' ? Number(weight) : weight;
+  if (weight === 'bold' || (typeof n === 'number' && n >= 600)) return fonts.bold;
+  if (typeof n === 'number' && n >= 500) return fonts.semibold;
+  return fonts.regular;
+}
 
 export const spacing = {
   xs: 4,

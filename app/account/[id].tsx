@@ -3,7 +3,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { Text } from '../../src/components/Typo';
 
 import { projectBalance } from '../../src/lib/analytics';
 import { LineChart } from '../../src/components/charts';

@@ -3,7 +3,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Link, useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Text } from '../../src/components/Typo';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BarChart, DonutChart, LineChart, ProgressRing } from '../../src/components/charts';
@@ -26,7 +27,7 @@ import {
 } from '../../src/lib/date';
 import { percent, percentFloor, shortWon, won } from '../../src/lib/money';
 import { useStore } from '../../src/store/StoreProvider';
-import { colors, font, radius, spacing } from '../../src/theme';
+import { colors, font, fonts, radius, spacing } from '../../src/theme';
 
 export default function Dashboard() {
   const router = useRouter();
@@ -296,8 +297,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: spacing.lg,
   },
-  greeting: { color: colors.text, fontSize: font.h1, fontWeight: '800' },
-  tagline: { color: colors.textMuted, fontSize: font.small, marginTop: 3 },
+  greeting: { color: colors.text, fontSize: font.h1 + 8, fontFamily: fonts.display, letterSpacing: -0.5 },
+  tagline: { color: colors.textMuted, fontSize: font.small, marginTop: 4, fontFamily: fonts.display },
   // 부제가 생겨 줄이 하나 늘었다. 날짜는 한 단계 더 흐리게 해서 순서를 만든다.
   headerSub: { color: colors.textFaint, fontSize: font.tiny, marginTop: 5 },
   iconButton: {

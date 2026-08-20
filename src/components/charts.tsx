@@ -6,7 +6,8 @@
  */
 
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
+import { StyleSheet, View, type LayoutChangeEvent } from 'react-native';
+import { Text } from './Typo';
 import Svg, {
   Circle,
   Defs,
@@ -19,7 +20,7 @@ import Svg, {
   Text as SvgText,
 } from 'react-native-svg';
 
-import { colors, font, radius, spacing } from '../theme';
+import { colors, font, fonts, radius, spacing } from '../theme';
 import { axisWon, percent } from '../lib/money';
 
 /** 부모 너비를 재서 자식에게 넘겨준다. 차트가 화면 폭에 맞게 늘어나도록. */
@@ -196,6 +197,7 @@ export function LineChart({
                   y={y(gv) + 4}
                   fill={colors.textFaint}
                   fontSize={font.tiny}
+                  fontFamily={fonts.regular}
                   textAnchor="end"
                 >
                   {axisWon(gv)}
@@ -246,6 +248,7 @@ export function LineChart({
                   y={height - 6}
                   fill={colors.textFaint}
                   fontSize={font.tiny}
+                  fontFamily={fonts.regular}
                   textAnchor="middle"
                 >
                   {p.label}
@@ -315,6 +318,7 @@ export function BarChart({
                 y={y(gv) + 4}
                 fill={colors.textFaint}
                 fontSize={font.tiny}
+                fontFamily={fonts.regular}
                 textAnchor="end"
               >
                 {axisWon(gv)}
@@ -345,6 +349,7 @@ export function BarChart({
                       y={height - 6}
                       fill={colors.textFaint}
                       fontSize={font.tiny}
+                      fontFamily={fonts.regular}
                       textAnchor="middle"
                     >
                       {b.label}
@@ -384,6 +389,7 @@ export function BarChart({
                   y={y(targetLine) - 7}
                   fill={colors.warn}
                   fontSize={font.tiny}
+                  fontFamily={fonts.regular}
                   textAnchor="start"
                 >
                   {targetLabel}

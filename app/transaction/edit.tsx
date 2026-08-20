@@ -2,7 +2,8 @@
 
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { Text } from '../../src/components/Typo';
 
 import { DateField } from '../../src/components/DateField';
 import { FormScreen } from '../../src/components/FormScreen';

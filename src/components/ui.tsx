@@ -6,15 +6,14 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
-  TextInput,
   View,
   type StyleProp,
   type TextStyle,
   type ViewStyle,
 } from 'react-native';
+import { Text, TextInput } from './Typo';
 
-import { colors, font, radius, spacing } from '../theme';
+import { colors, font, fonts, radius, spacing } from '../theme';
 import { formatAmountInput } from '../lib/money';
 
 /* ------------------------------------------------------------------ 텍스트 */
@@ -365,7 +364,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
     marginTop: spacing.xl,
   },
-  sectionTitle: { color: colors.text, fontSize: font.h3, fontWeight: '700' },
+  sectionTitle: { color: colors.text, fontSize: font.h3 + 1, fontFamily: fonts.display },
   sectionAction: { color: colors.primary, fontSize: font.small, fontWeight: '600' },
 
   button: {

@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import type { ColorValue } from 'react-native';
 
-import { colors } from '../../src/theme';
+import { colors, fonts } from '../../src/theme';
 
 /** 탭 아이콘. 활성/비활성 색은 Tabs가 넘겨준다. */
 function icon(name: keyof typeof Ionicons.glyphMap) {
@@ -26,7 +26,7 @@ export default function TabsLayout() {
         },
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textFaint,
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+        tabBarLabelStyle: { fontSize: 11, fontFamily: fonts.semibold },
       }}
     >
       <Tabs.Screen
