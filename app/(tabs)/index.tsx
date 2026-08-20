@@ -77,6 +77,7 @@ export default function Dashboard() {
       <View style={styles.header}>
         <View>
           <Text style={styles.greeting}>모아</Text>
+          <Text style={styles.tagline}>내 자산을 한 곳에, 모아 관리하다</Text>
           <Text style={styles.headerSub}>
             {formatMonth(view.month)} · {view.elapsedMonths}개월째
           </Text>
@@ -296,7 +297,9 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   greeting: { color: colors.text, fontSize: font.h1, fontWeight: '800' },
-  headerSub: { color: colors.textMuted, fontSize: font.small, marginTop: 2 },
+  tagline: { color: colors.textMuted, fontSize: font.small, marginTop: 3 },
+  // 부제가 생겨 줄이 하나 늘었다. 날짜는 한 단계 더 흐리게 해서 순서를 만든다.
+  headerSub: { color: colors.textFaint, fontSize: font.tiny, marginTop: 5 },
   iconButton: {
     width: 40,
     height: 40,
