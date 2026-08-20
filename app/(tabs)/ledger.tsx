@@ -1,12 +1,16 @@
 /**
- * 가계부 탭: 그 달에 오간 돈의 기록.
+ * 가계부 탭: 한 달의 돈을 한 화면에서 본다.
  *
- * 카테고리별 분석(도넛·증감)은 월간 리포트로 옮겼다. 같은 숫자를 예산 탭까지
- * 세 곳에서 보여주고 있었다. 여기는 '무엇을 언제 썼나'만 본다.
+ *   내역 — 무엇을 언제 썼나
+ *   예산 — 이 달에 쓰기로 한 돈은 얼마고 얼마나 남았나
+ *
+ * 원래 예산은 별도 탭이었다. 같은 달의 같은 카테고리 금액을 두 탭에서 따로
+ * 보여주니 어느 쪽을 봐야 할지 애매했다. 달 선택과 월 요약을 함께 쓰도록
+ * 하나로 합쳤다. 카테고리별 분석(도넛·증감)은 월간 리포트에 있다.
  */
 
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import {
   Alert,
@@ -17,7 +21,8 @@ import {
 } from 'react-native';
 import { Text } from '../../src/components/Typo';
 
-import { Card, EmptyState } from '../../src/components/ui';
+import { BudgetPanel } from '../../src/components/BudgetPanel';
+import { Card, EmptyState, Segmented } from '../../src/components/ui';
 import { monthlyCashflow } from '../../src/lib/analytics';
 import {
   addMonths,
@@ -35,6 +40,11 @@ import type { Transaction } from '../../src/types';
 export default function LedgerScreen() {
   const router = useRouter();
   const { data, removeTransaction } = useStore();
+  // 리포트에서 '예산 관리'로 들어오면 바로 예산이 보이게 한다.
+  const { pane: initialPane } = useLocalSearchParams<{ pane?: string }>();
+  const [pane, setPane] = useState<'tx' | 'budget'>(
+    initialPane === 'budget' ? 'budget' : 'tx',
+  );
   const [month, setMonth] = useState(currentMonth());
 
   const view = useMemo(() => {
@@ -123,7 +133,31 @@ export default function LedgerScreen() {
           ) : null}
         </Card>
 
-        {view.count === 0 ? (
+        {/* 자세한 분석은 리포트에서. 내역·예산 어느 쪽을 보든 같은 자리에 둔다. */}
+        <Pressable
+          onPress={() => router.push('/report')}
+          style={({ pressed }) => [styles.reportLink, pressed && { opacity: 0.7 }]}
+        >
+          <Ionicons name="stats-chart-outline" size={18} color={colors.primary} />
+          <Text style={styles.reportText}>이번 달 리포트 보기</Text>
+          <Ionicons name="chevron-forward" size={18} color={colors.textFaint} />
+        </Pressable>
+
+        <Segmented
+          style={{ marginTop: spacing.lg }}
+          value={pane}
+          onChange={setPane}
+          options={[
+            { value: 'tx' as const, label: '내역' },
+            { value: 'budget' as const, label: '예산' },
+          ]}
+        />
+
+        {pane === 'budget' ? (
+          <View style={{ marginTop: spacing.md }}>
+            <BudgetPanel month={month} />
+          </View>
+        ) : view.count === 0 ? (
           <EmptyState
             emoji="🧾"
             title={`${formatMonth(month)} 기록이 없어요`}
@@ -133,16 +167,6 @@ export default function LedgerScreen() {
           />
         ) : (
           <>
-            {/* 자세한 분석은 리포트에서. 여기는 기록만 본다. */}
-            <Pressable
-              onPress={() => router.push('/report')}
-              style={({ pressed }) => [styles.reportLink, pressed && { opacity: 0.7 }]}
-            >
-              <Ionicons name="stats-chart-outline" size={18} color={colors.primary} />
-              <Text style={styles.reportText}>이번 달 리포트 보기</Text>
-              <Ionicons name="chevron-forward" size={18} color={colors.textFaint} />
-            </Pressable>
-
             {/* 거래 목록 */}
             <Text style={styles.listTitle}>전체 내역 {view.count}건</Text>
             {groups.map((group) => (
@@ -186,12 +210,14 @@ export default function LedgerScreen() {
         )}
       </ScrollView>
 
-      <Pressable
-        style={({ pressed }) => [styles.fab, pressed && { opacity: 0.8 }]}
-        onPress={() => router.push('/transaction/edit')}
-      >
-        <Ionicons name="add" size={26} color="#FFFFFF" />
-      </Pressable>
+      {pane === 'tx' ? (
+        <Pressable
+          style={({ pressed }) => [styles.fab, pressed && { opacity: 0.8 }]}
+          onPress={() => router.push('/transaction/edit')}
+        >
+          <Ionicons name="add" size={26} color="#FFFFFF" />
+        </Pressable>
+      ) : null}
     </View>
   );
 }

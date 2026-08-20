@@ -42,10 +42,6 @@ export default function TabsLayout() {
         options={{ title: '가계부', tabBarIcon: icon('receipt-outline') }}
       />
       <Tabs.Screen
-        name="budget"
-        options={{ title: '예산', tabBarIcon: icon('pie-chart-outline') }}
-      />
-      <Tabs.Screen
         name="settings"
         options={{ title: '설정', tabBarIcon: icon('settings-outline') }}
       />

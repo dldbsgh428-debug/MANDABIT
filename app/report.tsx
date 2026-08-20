@@ -179,7 +179,7 @@ export default function ReportScreen() {
               <SectionHeader
                 title="예산 초과"
                 action="예산 관리"
-                onAction={() => router.push('/(tabs)/budget')}
+                onAction={() => router.push('/ledger?pane=budget')}
               />
               <Card style={{ padding: 0 }}>
                 {report.overBudget.map((line, i) => (

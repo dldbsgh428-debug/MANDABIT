@@ -1,12 +1,18 @@
-/** 예산 탭: 월 저축 목표 달성 현황과 카테고리별 예산 소진율. */
+/**
+ * 예산 화면 조각: 월 저축 목표, 고정지출, 카테고리별 예산 소진율.
+ *
+ * 원래 탭이었는데 가계부 안으로 들어왔다. 가계부가 '이 달에 쓴 돈'을 다루니
+ * '이 달에 쓰기로 한 돈'도 같은 화면에 있는 편이 자연스럽다. 달 선택은
+ * 가계부가 갖고 있어서 month를 받아서 쓴다.
+ */
 
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { Text } from '../../src/components/Typo';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { Text } from './Typo';
 
-import { BudgetBar } from '../../src/components/charts';
+import { BudgetBar } from './charts';
 import {
   AmountInput,
   Button,
@@ -15,22 +21,22 @@ import {
   EmptyState,
   Field,
   SectionHeader,
-} from '../../src/components/ui';
+} from './ui';
 import {
   budgetStatus,
   monthlyCashflow,
   recurringStatus,
   recurringTotal,
-} from '../../src/lib/analytics';
-import { currentMonth, formatMonth } from '../../src/lib/date';
-import { parseAmount, percent, percentFloor, shortWon, won } from '../../src/lib/money';
-import { useStore } from '../../src/store/StoreProvider';
-import { colors, font, spacing } from '../../src/theme';
+} from '../lib/analytics';
 
-export default function BudgetScreen() {
+import { parseAmount, percent, percentFloor, shortWon, won } from '../lib/money';
+import { useStore } from '../store/StoreProvider';
+import { colors, font, spacing } from '../theme';
+import type { MonthKey } from '../types';
+
+export function BudgetPanel({ month }: { month: MonthKey }) {
   const router = useRouter();
   const { data, updateSettings } = useStore();
-  const month = currentMonth();
 
   // 월 저축 목표를 이 화면에서 바로 고칠 수 있게 한다.
   const [editingTarget, setEditingTarget] = useState(false);
@@ -65,9 +71,7 @@ export default function BudgetScreen() {
   };
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      <Text style={styles.monthText}>{formatMonth(month)}</Text>
-
+    <View>
       {/* ------------------------------------------------- 월 저축 목표 */}
       <Card>
         <View style={styles.cardHead}>
@@ -236,21 +240,11 @@ export default function BudgetScreen() {
           </View>
         </>
       )}
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: spacing.lg, paddingBottom: spacing.xxl },
-
-  monthText: {
-    color: colors.textMuted,
-    fontSize: font.small,
-    fontWeight: '600',
-    marginBottom: spacing.md,
-  },
-
   cardHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   cardTitle: { color: colors.text, fontSize: font.h3, fontWeight: '700' },
   editLink: { color: colors.primary, fontSize: font.small, fontWeight: '600' },
