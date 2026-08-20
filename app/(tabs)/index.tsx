@@ -203,7 +203,7 @@ export default function Dashboard() {
       </Card>
 
       {/* ------------------------------------------------------ 이번 달 요약 */}
-      <SectionHeader title="이번 달 현금흐름" action="가계부" onAction={() => router.push('/ledger')} />
+      <SectionHeader title="이번 달 현금흐름" action="리포트" onAction={() => router.push('/report')} />
       <View style={styles.statRow}>
         <Card style={styles.statCard}>
           <Text style={styles.statLabel}>수입</Text>
