@@ -199,6 +199,7 @@ export interface StoreValue {
     interestRate?: number;
     interestMode?: Account['interestMode'];
     monthlyDeposit?: number;
+    payDay?: number;
     memo?: string;
   }) => void;
   updateAccount: (id: string, patch: Partial<Account>) => void;
@@ -267,6 +268,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         interestRate: input.interestRate,
         interestMode: input.interestMode,
         monthlyDeposit: input.monthlyDeposit,
+        payDay: input.payDay,
         memo: input.memo,
         createdAt: now,
         updatedAt: now,

@@ -35,9 +35,10 @@ export default function AccountEditScreen() {
   const [deposit, setDeposit] = useState(
     existing?.monthlyDeposit ? String(existing.monthlyDeposit) : '',
   );
-  const [interestMode, setInterestMode] = useState<'simple' | 'compound'>(
-    existing?.interestMode ?? 'simple',
+  const [interestMode, setInterestMode] = useState<'none' | 'simple' | 'compound'>(
+    existing?.interestMode ?? 'none',
   );
+  const [payDay, setPayDay] = useState(existing?.payDay ? String(existing.payDay) : '');
   const [memo, setMemo] = useState(existing?.memo ?? '');
   const [include, setInclude] = useState(existing?.includeInNetWorth ?? true);
 
@@ -62,6 +63,9 @@ export default function AccountEditScreen() {
     const amount = parseAmount(balance);
     const interestRate = rate ? Number(rate) : undefined;
     const monthlyDeposit = parseAmount(deposit) || undefined;
+    // 1~31 밖의 숫자는 저장하지 않는다. 그 달에 없는 날은 계산할 때 말일로 본다.
+    const day = Number(payDay);
+    const dayOfMonth = monthlyDeposit && day >= 1 && day <= 31 ? Math.floor(day) : undefined;
 
     if (existing) {
       updateAccount(existing.id, {
@@ -70,9 +74,10 @@ export default function AccountEditScreen() {
         kind,
         includeInNetWorth: include,
         interestRate: Number.isFinite(interestRate) ? interestRate : undefined,
-        // 기본값(단리)은 저장하지 않는다. 저장된 데이터에 의미 없는 값이 쌓이지 않게.
-        interestMode: interestMode === 'compound' ? 'compound' : undefined,
+        // '반영 안 함'은 저장하지 않는다. 저장된 데이터에 의미 없는 값이 쌓이지 않게.
+        interestMode: interestMode === 'none' ? undefined : interestMode,
         monthlyDeposit,
+        payDay: dayOfMonth,
         memo: memo.trim() || undefined,
       });
       // 잔액이 바뀌었으면 잔액 기록도 함께 남긴다(추이 그래프의 데이터가 된다).
@@ -85,9 +90,10 @@ export default function AccountEditScreen() {
         balance: amount,
         includeInNetWorth: include,
         interestRate: Number.isFinite(interestRate) ? interestRate : undefined,
-        // 기본값(단리)은 저장하지 않는다. 저장된 데이터에 의미 없는 값이 쌓이지 않게.
-        interestMode: interestMode === 'compound' ? 'compound' : undefined,
+        // '반영 안 함'은 저장하지 않는다. 저장된 데이터에 의미 없는 값이 쌓이지 않게.
+        interestMode: interestMode === 'none' ? undefined : interestMode,
         monthlyDeposit,
+        payDay: dayOfMonth,
         memo: memo.trim() || undefined,
       });
     }
@@ -159,11 +165,12 @@ export default function AccountEditScreen() {
 
       {side === 'asset' && rate ? (
         <Field
-          label="이자 방식"
-          hint="예금·적금은 보통 단리입니다. 군인공제회처럼 매달 이자에 이자가 붙는 상품은 월복리를 고르세요."
+          label="이자 반영"
+          hint="적금·예금은 보통 만기에 이자를 한 번에 받으니 '안 함'으로 두세요. 군인공제회처럼 매달 이자가 실제로 붙는 상품만 켜면 됩니다."
         >
           <Segmented
             options={[
+              { value: 'none' as const, label: '안 함' },
               { value: 'simple' as const, label: '단리' },
               { value: 'compound' as const, label: '월복리' },
             ]}
@@ -179,6 +186,21 @@ export default function AccountEditScreen() {
           hint="적금처럼 매달 자동이체되는 금액. 마지막 기록 이후 지난 개월수만큼 더해 보여줍니다."
         >
           <AmountInput value={deposit} onChangeText={setDeposit} />
+        </Field>
+      ) : null}
+
+      {side === 'asset' && deposit ? (
+        <Field
+          label="납입일 (선택)"
+          hint="매달 며칠에 빠지는지. 적어두면 달력 기준으로 세서 더 정확합니다. 비우면 마지막 기록일에서 한 달씩 셉니다."
+        >
+          <Input
+            value={payDay}
+            // 두 자리까지만 받는다. 31을 넘는 값은 저장할 때 걸러진다.
+            onChangeText={(t) => setPayDay(t.replace(/[^0-9]/g, '').slice(0, 2))}
+            placeholder="25"
+            keyboardType="number-pad"
+          />
         </Field>
       ) : null}
 

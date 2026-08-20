@@ -58,10 +58,12 @@ export interface Projection {
  * 부채는 추정하지 않는다. 상환 계획을 모르는 채로 빚을 불리면 순자산이
  * 실제보다 나쁘게 나오고, 그건 사용자가 입력한 적 없는 숫자다.
  *
- * 이자는 기본이 단리 일할 계산이다. 한국의 정기예금·정기적금이 단리이기 때문이다.
- * 계좌를 월복리로 지정하면 매달 이자에 이자가 붙는 방식으로 계산한다
- * (군인공제회처럼 복리로 굴러가는 상품). 납입금에도 각각 들어간 날부터
- * 이자가 붙는 것은 두 방식이 같다.
+ * 이자는 계좌에서 켠 경우에만 붙인다. 적금·예금은 만기에 한 번에 받는 게
+ * 보통이라, 중간 잔액에 이자를 얹으면 통장 숫자와 어긋나기 때문이다.
+ * 켤 때는 단리(일할)와 월복리(매달 이자에 이자) 중에 고른다.
+ *
+ * 납입금은 납입일을 적어두면 그 날짜 기준으로 세고, 비워두면 마지막 기록일에서
+ * 한 달씩 센다. 이자를 켠 계좌라면 납입금에도 각각 들어간 날부터 이자가 붙는다.
  */
 export function projectBalance(
   account: Account,
@@ -83,10 +85,16 @@ export function projectBalance(
   if (days <= 0) return none;
 
   const monthly = account.monthlyDeposit ?? 0;
-  const yearlyRate = (account.interestRate ?? 0) / 100;
+  // 이자 방식을 고르지 않은 계좌는 이율이 적혀 있어도 이자를 붙이지 않는다.
+  const yearlyRate = account.interestMode ? (account.interestRate ?? 0) / 100 : 0;
   if (monthly <= 0 && yearlyRate <= 0) return { ...none, days };
 
-  const months = fullMonthsBetween(lastRecordDate, asOf);
+  // 납입일을 적어뒀으면 실제 이체일을 쓴다. 그래야 '이번 달 것이 들어왔는지'가
+  // 마지막 기록일이 아니라 달력 기준으로 정해진다.
+  const dates = monthly > 0 && account.payDay
+    ? depositDates(lastRecordDate, asOf, account.payDay)
+    : null;
+  const months = dates ? dates.length : fullMonthsBetween(lastRecordDate, asOf);
   const deposits = monthly * months;
 
   // 이자는 '얼마가 며칠 들어있었나'만 알면 나온다. 단리는 일할로 나누고,
@@ -99,10 +107,18 @@ export function projectBalance(
 
   let interest = grow(account.balance, days);
 
-  // 납입금은 들어간 날부터 이자가 붙는다. k번째 납입은 k개월 뒤에 들어갔다고 본다.
-  for (let k = 1; k <= months; k++) {
-    const heldDays = days - k * DAYS_PER_MONTH;
-    if (heldDays > 0) interest += grow(monthly, heldDays);
+  // 납입금은 들어간 날부터 이자가 붙는다.
+  if (dates) {
+    for (const date of dates) {
+      const heldDays = daysBetween(date, asOf);
+      if (heldDays > 0) interest += grow(monthly, heldDays);
+    }
+  } else {
+    // 납입일을 모르면 k번째 납입이 k개월 뒤에 들어갔다고 본다.
+    for (let k = 1; k <= months; k++) {
+      const heldDays = days - k * DAYS_PER_MONTH;
+      if (heldDays > 0) interest += grow(monthly, heldDays);
+    }
   }
 
   const rounded = Math.round(interest);
@@ -116,6 +132,19 @@ export function projectBalance(
     days,
     hasProjection: deposits > 0 || rounded > 0,
   };
+}
+
+/**
+ * 마지막 기록 다음날부터 asOf까지, 매달 payDay에 빠져나갔을 납입일들.
+ * 그 달에 없는 날(2월 31일 같은)은 말일로 본다.
+ */
+export function depositDates(from: ISODate, to: ISODate, payDay: number): ISODate[] {
+  const out: ISODate[] = [];
+  for (const month of monthRange(monthOf(from), monthOf(to))) {
+    const due = dueDateIn(month, payDay);
+    if (due > from && due <= to) out.push(due);
+  }
+  return out;
 }
 
 /** 계좌의 마지막 잔액 기록 날짜. 기록이 없으면 계좌를 만든 날. */

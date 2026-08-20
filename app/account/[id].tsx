@@ -113,6 +113,7 @@ export default function AccountDetailScreen() {
             <Text style={styles.projectionTitle}>
               {formatDateFull(recordedOn)} 기록 이후 {projection.days}일치 예상
               {account.interestMode === 'compound' ? ' · 월복리' : ''}
+              {account.interestMode === 'simple' ? ' · 단리' : ''}
             </Text>
             <View style={styles.projectionRow}>
               <Text style={styles.projectionLabel}>기록한 잔액</Text>

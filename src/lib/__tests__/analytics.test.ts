@@ -444,13 +444,13 @@ describe('projectBalance', () => {
 
   it('기존 잔액에 단리로 일할 이자를 붙인다', () => {
     // 1,000만원, 연 4% -> 1년이면 40만원.
-    const a = account({ id: 'a', balance: 10_000_000, interestRate: 4 });
+    const a = account({ id: 'a', balance: 10_000_000, interestRate: 4, interestMode: 'simple' });
     const p = projectBalance(a, '2026-01-01', '2027-01-01');
     expect(p.interest).toBe(400_000);
   });
 
   it('반년이면 이자도 절반이다', () => {
-    const a = account({ id: 'a', balance: 10_000_000, interestRate: 4 });
+    const a = account({ id: 'a', balance: 10_000_000, interestRate: 4, interestMode: 'simple' });
     const p = projectBalance(a, '2026-01-01', '2026-07-02');
     // 182일 / 365 * 40만원
     expect(p.interest).toBeCloseTo((400_000 * 182) / 365, 0);
@@ -459,7 +459,7 @@ describe('projectBalance', () => {
   it('월복리로 두면 이자에 이자가 붙는다', () => {
     // 1,000만원, 연 4%, 1년. 단리는 40만원, 월복리는 (1 + 0.04/12)^12 - 1 만큼.
     const simple = projectBalance(
-      account({ id: 'a', balance: 10_000_000, interestRate: 4 }),
+      account({ id: 'a', balance: 10_000_000, interestRate: 4, interestMode: 'simple' }),
       '2026-01-01',
       '2027-01-01',
     );
@@ -486,6 +486,30 @@ describe('projectBalance', () => {
     const full = projectBalance(a, '2026-01-01', '2027-01-01');
 
     expect(half.interest + again.interest).toBeCloseTo(full.interest, -1);
+  });
+
+  it('이자 방식을 안 고르면 이율이 적혀 있어도 이자를 안 붙인다', () => {
+    // 적금·예금은 만기에 이자를 한 번에 받는다. 중간 잔액에 얹으면 통장과 어긋난다.
+    const a = account({ id: 'a', balance: 10_000_000, interestRate: 4 });
+    const p = projectBalance(a, '2026-01-01', '2027-01-01');
+
+    expect(p.interest).toBe(0);
+    expect(p.total).toBe(10_000_000);
+  });
+
+  it('납입일을 적어두면 달력 기준으로 납입 횟수를 센다', () => {
+    // 매달 25일에 빠지는 적금. 1/26에 기록했으면 1월치는 이미 지나갔다.
+    const a = account({ id: 'a', balance: 0, monthlyDeposit: 500_000, payDay: 25 });
+
+    expect(projectBalance(a, '2026-01-26', '2026-02-24').deposits).toBe(0);
+    expect(projectBalance(a, '2026-01-26', '2026-02-25').deposits).toBe(500_000);
+    expect(projectBalance(a, '2026-01-26', '2026-04-25').deposits).toBe(1_500_000);
+  });
+
+  it('납입일이 그 달에 없으면 말일에 빠진 것으로 본다', () => {
+    // 31일 납입인데 2월은 28일까지다.
+    const a = account({ id: 'a', balance: 0, monthlyDeposit: 500_000, payDay: 31 });
+    expect(projectBalance(a, '2026-02-01', '2026-02-28').deposits).toBe(500_000);
   });
 
   it('부채는 추정하지 않는다', () => {
@@ -523,11 +547,11 @@ describe('projectBalance', () => {
   it('잔액을 다시 기록하면 추정이 처음부터 다시 쌓인다', () => {
     // 이중 계산이 생기지 않는지 확인한다. 기준이 늘 '마지막 기록'이므로
     // 1년치 이자가 붙은 뒤 실제 잔액을 넣으면 그 시점부터 0에서 시작해야 한다.
-    const before = account({ id: 'a', balance: 10_000_000, interestRate: 4 });
+    const before = account({ id: 'a', balance: 10_000_000, interestRate: 4, interestMode: 'simple' });
     expect(projectBalance(before, '2026-01-01', '2027-01-01').interest).toBe(400_000);
 
     // 사용자가 2027-01-01에 실제 잔액 1,040만원을 입력했다.
-    const after = account({ id: 'a', balance: 10_400_000, interestRate: 4 });
+    const after = account({ id: 'a', balance: 10_400_000, interestRate: 4, interestMode: 'simple' });
     const p = projectBalance(after, '2027-01-01', '2027-01-01');
 
     expect(p.interest).toBe(0);
@@ -537,7 +561,13 @@ describe('projectBalance', () => {
   it('납입금에도 들어간 날부터 이자가 붙는다', () => {
     // 잔액 0, 매달 100만원, 연 12%(월 1%).
     // 3개월 뒤: 첫 납입은 2개월, 둘째는 1개월, 셋째는 0개월치 이자.
-    const a = account({ id: 'a', balance: 0, monthlyDeposit: 1_000_000, interestRate: 12 });
+    const a = account({
+      id: 'a',
+      balance: 0,
+      monthlyDeposit: 1_000_000,
+      interestRate: 12,
+      interestMode: 'simple',
+    });
     const p = projectBalance(a, '2026-01-01', '2026-04-01');
 
     expect(p.deposits).toBe(3_000_000);
