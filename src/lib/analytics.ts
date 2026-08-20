@@ -147,6 +147,29 @@ export function depositDates(from: ISODate, to: ISODate, payDay: number): ISODat
   return out;
 }
 
+export interface PrincipalSplit {
+  principal: number;
+  /** 잔액 - 원금. 주식·코인이면 평가손익이라 음수일 수 있다. */
+  gain: number;
+  /** 원금 대비 수익률. 원금이 0이면 낼 수 없어 null. */
+  rate: number | null;
+}
+
+/**
+ * 잔액을 원금과 불어난 몫으로 나눈다.
+ *
+ * 원금을 적어두지 않은 계좌는 null이다. 0으로 두면 '전액이 이자'라는 뜻이
+ * 되어버려서, 모른다는 것과 구분해야 한다.
+ */
+export function principalSplit(balance: number, principal?: number): PrincipalSplit | null {
+  if (principal === undefined) return null;
+  return {
+    principal,
+    gain: balance - principal,
+    rate: principal > 0 ? (balance - principal) / principal : null,
+  };
+}
+
 /** 계좌의 마지막 잔액 기록 날짜. 기록이 없으면 계좌를 만든 날. */
 export function lastRecordDate(account: Account, snapshots: BalanceSnapshot[]): ISODate {
   let latest = '';

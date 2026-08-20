@@ -15,7 +15,7 @@ import {
   Segmented,
   ToggleRow,
 } from '../../src/components/ui';
-import { parseAmount } from '../../src/lib/money';
+import { parseAmount, won } from '../../src/lib/money';
 import { useStore } from '../../src/store/StoreProvider';
 import { accountKindMeta, assetKinds, colors, font, liabilityKinds, spacing } from '../../src/theme';
 import type { AccountKind } from '../../src/types';
@@ -31,6 +31,14 @@ export default function AccountEditScreen() {
   const [kind, setKind] = useState<AccountKind>(existing?.kind ?? 'deposit');
   const [name, setName] = useState(existing?.name ?? '');
   const [balance, setBalanceInput] = useState(existing ? String(existing.balance) : '');
+  // 원금을 적어둔 계좌는 '원금 + 이자'로 나눠 입력한다.
+  const [split, setSplit] = useState(existing?.principal !== undefined);
+  const [principal, setPrincipal] = useState(
+    existing?.principal !== undefined ? String(existing.principal) : '',
+  );
+  const [gain, setGain] = useState(
+    existing?.principal !== undefined ? String(existing.balance - existing.principal) : '',
+  );
   const [rate, setRate] = useState(existing?.interestRate ? String(existing.interestRate) : '');
   const [deposit, setDeposit] = useState(
     existing?.monthlyDeposit ? String(existing.monthlyDeposit) : '',
@@ -47,6 +55,19 @@ export default function AccountEditScreen() {
     label: `${accountKindMeta[k].emoji} ${accountKindMeta[k].label}`,
   }));
 
+  // 주식·코인은 불어난 몫이 이자가 아니라 평가손익이고, 마이너스일 수 있다.
+  const gainLabel = kind === 'stock' || kind === 'crypto' ? '평가손익' : '이자';
+
+  /** 합계 <-> 원금+이자를 오갈 때 이미 적은 숫자를 옮겨준다. */
+  const toggleSplit = (next: boolean) => {
+    if (next && !principal) {
+      setPrincipal(balance);
+      setGain('');
+    }
+    if (!next) setBalanceInput(String(parseAmount(principal) + parseAmount(gain)));
+    setSplit(next);
+  };
+
   /** 자산↔부채를 바꾸면 종류도 그쪽의 기본값으로 맞춰준다. */
   const changeSide = (next: 'asset' | 'liability') => {
     setSide(next);
@@ -60,7 +81,11 @@ export default function AccountEditScreen() {
       return;
     }
 
-    const amount = parseAmount(balance);
+    // 나눠 입력했으면 잔액은 두 값을 더해서 만든다. 합계를 따로 저장하면
+    // 원금+이자와 어긋날 수 있다.
+    const useSplit = side === 'asset' && split;
+    const principalAmount = useSplit ? parseAmount(principal) : undefined;
+    const amount = useSplit ? parseAmount(principal) + parseAmount(gain) : parseAmount(balance);
     const interestRate = rate ? Number(rate) : undefined;
     const monthlyDeposit = parseAmount(deposit) || undefined;
     // 1~31 밖의 숫자는 저장하지 않는다. 그 달에 없는 날은 계산할 때 말일로 본다.
@@ -76,6 +101,7 @@ export default function AccountEditScreen() {
         interestRate: Number.isFinite(interestRate) ? interestRate : undefined,
         // '반영 안 함'은 저장하지 않는다. 저장된 데이터에 의미 없는 값이 쌓이지 않게.
         interestMode: interestMode === 'none' ? undefined : interestMode,
+        principal: principalAmount,
         monthlyDeposit,
         payDay: dayOfMonth,
         memo: memo.trim() || undefined,
@@ -92,6 +118,7 @@ export default function AccountEditScreen() {
         interestRate: Number.isFinite(interestRate) ? interestRate : undefined,
         // '반영 안 함'은 저장하지 않는다. 저장된 데이터에 의미 없는 값이 쌓이지 않게.
         interestMode: interestMode === 'none' ? undefined : interestMode,
+        principal: principalAmount,
         monthlyDeposit,
         payDay: dayOfMonth,
         memo: memo.trim() || undefined,
@@ -145,16 +172,43 @@ export default function AccountEditScreen() {
         />
       </Field>
 
-      <Field
-        label={side === 'asset' ? '현재 잔액' : '남은 원금'}
-        hint={
-          side === 'asset'
-            ? '지금 이 계좌에 들어있는 금액'
-            : '부채는 순자산에서 자동으로 차감됩니다.'
-        }
-      >
-        <AmountInput value={balance} onChangeText={setBalanceInput} />
-      </Field>
+      {side === 'asset' ? (
+        <Field label="잔액 입력 방식" hint="나눠 적으면 얼마나 불어났는지 따로 볼 수 있어요.">
+          <Segmented
+            options={[
+              { value: 'total' as const, label: '합계' },
+              { value: 'split' as const, label: `원금+${gainLabel}` },
+            ]}
+            value={split ? 'split' : 'total'}
+            onChange={(v) => toggleSplit(v === 'split')}
+          />
+        </Field>
+      ) : null}
+
+      {side === 'asset' && split ? (
+        <>
+          <Field label="원금" hint="지금까지 내가 넣은 돈">
+            <AmountInput value={principal} onChangeText={setPrincipal} />
+          </Field>
+          <Field
+            label={gainLabel}
+            hint={`합계 ${won(parseAmount(principal) + parseAmount(gain))}`}
+          >
+            <AmountInput value={gain} onChangeText={setGain} />
+          </Field>
+        </>
+      ) : (
+        <Field
+          label={side === 'asset' ? '현재 잔액' : '남은 원금'}
+          hint={
+            side === 'asset'
+              ? '지금 이 계좌에 들어있는 금액'
+              : '부채는 순자산에서 자동으로 차감됩니다.'
+          }
+        >
+          <AmountInput value={balance} onChangeText={setBalanceInput} />
+        </Field>
+      )}
 
       <Field
         label="금리 (선택)"

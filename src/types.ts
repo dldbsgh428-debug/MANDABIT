@@ -54,6 +54,14 @@ export interface Account {
    */
   payDay?: number;
   /**
+   * 잔액 중 원금(내가 넣은 돈)의 누계.
+   *
+   * 적어두면 이자가 얼마나 붙었는지 나눠 볼 수 있다. 이자는 balance에서
+   * 빼서 구한다. 원금과 이자를 둘 다 저장하면 합이 잔액과 어긋날 수 있다.
+   * 주식·코인이면 매수 원금이고, 그 차액은 평가손익이라 음수일 수 있다.
+   */
+  principal?: number;
+  /**
    * 매달 자동이체로 들어가는 금액(적금 등).
    * 예상 잔액 증가를 켜면 마지막 기록 이후 지난 개월수만큼 더해진다.
    */
@@ -72,6 +80,8 @@ export interface BalanceSnapshot {
   accountId: string;
   date: ISODate;
   balance: number;
+  /** 그 시점의 원금. 계좌와 같은 뜻이고, 적어둔 경우에만 있다. */
+  principal?: number;
   memo?: string;
 }
 

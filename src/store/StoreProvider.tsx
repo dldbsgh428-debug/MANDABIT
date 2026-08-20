@@ -41,7 +41,14 @@ type Action =
   | { type: 'account/add'; account: Account; snapshot: BalanceSnapshot }
   | { type: 'account/update'; id: string; patch: Partial<Account> }
   | { type: 'account/remove'; id: string }
-  | { type: 'account/setBalance'; id: string; balance: number; date: ISODate; memo?: string }
+  | {
+      type: 'account/setBalance';
+      id: string;
+      balance: number;
+      date: ISODate;
+      memo?: string;
+      principal?: number;
+    }
   | { type: 'snapshot/remove'; id: string }
   | { type: 'tx/add'; tx: Transaction }
   | { type: 'tx/update'; id: string; patch: Partial<Transaction> }
@@ -60,7 +67,12 @@ function upsertSnapshot(snapshots: BalanceSnapshot[], next: BalanceSnapshot): Ba
   const idx = snapshots.findIndex((s) => s.accountId === next.accountId && s.date === next.date);
   if (idx === -1) return [...snapshots, next];
   const copy = [...snapshots];
-  copy[idx] = { ...copy[idx], balance: next.balance, memo: next.memo ?? copy[idx].memo };
+  copy[idx] = {
+    ...copy[idx],
+    balance: next.balance,
+    principal: next.principal ?? copy[idx].principal,
+    memo: next.memo ?? copy[idx].memo,
+  };
   return copy;
 }
 
@@ -105,7 +117,13 @@ function reducer(state: AppData, action: Action): AppData {
         ...state,
         accounts: state.accounts.map((a) =>
           a.id === action.id
-            ? { ...a, balance: action.balance, updatedAt: new Date().toISOString() }
+            ? {
+                ...a,
+                balance: action.balance,
+                // 원금을 같이 넘겼을 때만 고친다. 안 넘겼으면 예전 값을 지키는 게 맞다.
+                principal: action.principal ?? a.principal,
+                updatedAt: new Date().toISOString(),
+              }
             : a,
         ),
         snapshots: upsertSnapshot(state.snapshots, {
@@ -113,6 +131,7 @@ function reducer(state: AppData, action: Action): AppData {
           accountId: action.id,
           date: action.date,
           balance: action.balance,
+          principal: action.principal,
           memo: action.memo,
         }),
       };
@@ -198,13 +217,14 @@ export interface StoreValue {
     includeInNetWorth?: boolean;
     interestRate?: number;
     interestMode?: Account['interestMode'];
+    principal?: number;
     monthlyDeposit?: number;
     payDay?: number;
     memo?: string;
   }) => void;
   updateAccount: (id: string, patch: Partial<Account>) => void;
   removeAccount: (id: string) => void;
-  setBalance: (id: string, balance: number, date?: ISODate, memo?: string) => void;
+  setBalance: (id: string, balance: number, date?: ISODate, memo?: string, principal?: number) => void;
   removeSnapshot: (id: string) => void;
 
   addTransaction: (input: Omit<Transaction, 'id' | 'createdAt'>) => void;
@@ -267,6 +287,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         includeInNetWorth: input.includeInNetWorth ?? true,
         interestRate: input.interestRate,
         interestMode: input.interestMode,
+        principal: input.principal,
         monthlyDeposit: input.monthlyDeposit,
         payDay: input.payDay,
         memo: input.memo,
@@ -287,8 +308,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       addAccount,
       updateAccount: (id, patch) => dispatch({ type: 'account/update', id, patch }),
       removeAccount: (id) => dispatch({ type: 'account/remove', id }),
-      setBalance: (id, balance, date, memo) =>
-        dispatch({ type: 'account/setBalance', id, balance, date: date ?? today(), memo }),
+      setBalance: (id, balance, date, memo, principal) =>
+        dispatch({
+          type: 'account/setBalance',
+          id,
+          balance,
+          date: date ?? today(),
+          memo,
+          principal,
+        }),
       removeSnapshot: (id) => dispatch({ type: 'snapshot/remove', id }),
 
       addTransaction: (input) =>

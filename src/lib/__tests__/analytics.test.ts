@@ -10,6 +10,7 @@
 import {
   assetAllocation,
   lastRecordDate,
+  principalSplit,
   projectBalance,
   budgetStatus,
   categoryBreakdown,
@@ -418,6 +419,33 @@ describe('assetAllocation', () => {
 
 
 /* --------------------------------------------------------- 예상 잔액 증가 */
+
+describe('principalSplit', () => {
+  it('잔액에서 원금을 빼 불어난 몫을 낸다', () => {
+    const s = principalSplit(14_802_693, 14_000_000);
+    expect(s?.principal).toBe(14_000_000);
+    expect(s?.gain).toBe(802_693);
+    expect(s?.rate).toBeCloseTo(0.0573, 4);
+  });
+
+  it('원금을 안 적었으면 null이다', () => {
+    // 0으로 두면 '전액이 이자'라는 뜻이 되어버린다. 모른다는 것과 구분해야 한다.
+    expect(principalSplit(1_000_000, undefined)).toBeNull();
+  });
+
+  it('손실이면 음수로 나온다', () => {
+    // 주식 계좌는 평가손익이 마이너스일 수 있다.
+    const s = principalSplit(8_000_000, 10_000_000);
+    expect(s?.gain).toBe(-2_000_000);
+    expect(s?.rate).toBeCloseTo(-0.2);
+  });
+
+  it('원금이 0이면 수익률을 내지 않는다', () => {
+    const s = principalSplit(50_000, 0);
+    expect(s?.gain).toBe(50_000);
+    expect(s?.rate).toBeNull();
+  });
+});
 
 describe('projectBalance', () => {
   it('마지막 기록 이후 지난 개월수만큼 납입금을 더한다', () => {
