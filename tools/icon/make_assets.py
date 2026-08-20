@@ -22,27 +22,38 @@ def save(img, path, size):
     print('생성:', path, f'{size}x{size}')
 
 
-def mono(art, size):
-    """실루엣. 알파를 흰색 한 겹으로 세운다.
+def mono(size):
+    """테마 아이콘용 흰 실루엣.
 
-    유리 안쪽은 이미 비어 있어서 병이 선으로 남는다. 통짜 덩어리보다 낫다.
-    원본이 JPEG이라 얇은 병 테두리가 점선처럼 끊긴다. 그래서 한 번
-    부풀렸다 깎아(닫힘 연산) 선을 잇고, 남은 점은 크기로 걸러낸 뒤,
-    큰 구멍(병 안쪽)만 메워 매끈한 덩어리로 만든다.
+    알파(=배경이 아닌 곳)로 만들면 손잡이 구멍까지 메워져 뭉친 덩어리가 된다.
+    구멍 안에는 옅은 그림자가 깔려 있어 '배경'으로 안 걸러지기 때문이다.
+    그래서 밝기로 자른다. 바구니·카드·동전은 배경보다 뚜렷이 어둡고,
+    구멍 안쪽과 테두리 광택은 배경만큼 밝다.
     """
+    crop, cream, _, outside = U.load()
+    a = np.asarray(crop).astype(float)
+    lum = a @ np.array([0.299, 0.587, 0.114])
+    bg_lum = float(np.array(cream) @ np.array([0.299, 0.587, 0.114]))
+    # 사각형 테두리의 광택선이 남아 그림 옆에 얇은 활 모양으로 붙는다.
+    # 판을 안쪽으로 조금 깎아 테두리를 아예 제외한다.
+    inner = Image.fromarray(np.where(outside, 0, 255).astype('uint8'), 'L')
+    k = max(3, int(min(crop.size) * 0.045) | 1)
+    inner = np.asarray(inner.filter(ImageFilter.MinFilter(k))) > 127
+    mask = (lum < bg_lum * 0.91) & inner
+
+    alpha = Image.fromarray(np.where(mask, 255, 0).astype('uint8'), 'L')
+    # JPEG 경계가 톱니처럼 남는다. 부풀렸다 깎아 매끈하게.
+    alpha = alpha.filter(ImageFilter.MaxFilter(7)).filter(ImageFilter.MinFilter(7))
+    mask = U.drop_specks(np.asarray(alpha) > 127,
+                         min_area=int(alpha.size[0] * alpha.size[1] * 0.001))
+
+    art = Image.fromarray(np.zeros((*mask.shape, 4), dtype='uint8'), 'RGBA')
+    art.putalpha(Image.fromarray(np.where(mask, 255, 0).astype('uint8'), 'L'))
+    art = art.crop(art.getbbox())
+
     placed = U.place(art, size, TRANSPARENT, SAFE)
-    alpha = placed.getchannel('A').point(lambda v: 255 if v > 110 else 0)
-    alpha = alpha.filter(ImageFilter.MaxFilter(5)).filter(ImageFilter.MinFilter(5))
-
-    mask = np.asarray(alpha) > 127
-    mask = U.drop_specks(mask, min_area=int(size * size * 0.0004))
-    # 병 안쪽은 메워서 통짜 실루엣으로. 얇은 유리 선은 JPEG 자국 때문에
-    # 점선처럼 끊겨서, 선으로 남기면 지저분하다.
-    mask = U.fill_big_holes(mask, min_area=int(size * size * 0.004))
-
     white = Image.new('RGBA', placed.size, (255, 255, 255, 0))
-    white.putalpha(Image.fromarray(np.where(mask, 255, 0).astype('uint8'), 'L')
-                   .filter(ImageFilter.GaussianBlur(0.6)))
+    white.putalpha(placed.getchannel('A').filter(ImageFilter.GaussianBlur(0.6)))
     return white
 
 
@@ -56,6 +67,6 @@ if __name__ == '__main__':
 
     save(U.place(art, 1024, TRANSPARENT, SAFE), f'{out}/android-icon-foreground.png', 512)
     save(Image.new('RGBA', (512, 512), cream), f'{out}/android-icon-background.png', 512)
-    save(mono(art, 1024), f'{out}/android-icon-monochrome.png', 432)
+    save(mono(1024), f'{out}/android-icon-monochrome.png', 432)
 
     save(U.place(art, 1024, TRANSPARENT, SAFE), f'{out}/splash-icon.png', 1024)

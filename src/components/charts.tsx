@@ -71,7 +71,7 @@ export function ProgressRing({
         <Defs>
           <LinearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
             <Stop offset="0" stopColor={done ? colors.up : colors.primary} />
-            <Stop offset="1" stopColor={done ? '#7BE0B0' : '#8FB8FF'} />
+            <Stop offset="1" stopColor={done ? colors.upLight : colors.primaryLight} />
           </LinearGradient>
         </Defs>
         {/* 12시 방향에서 시작해 시계방향으로 채우도록 -90도 회전 */}
@@ -175,8 +175,8 @@ export function LineChart({
           <Svg width={width} height={height}>
             <Defs>
               <LinearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-                <Stop offset="0" stopColor={colors.primary} stopOpacity={0.28} />
-                <Stop offset="1" stopColor={colors.primary} stopOpacity={0} />
+                <Stop offset="0" stopColor={colors.primaryLight} stopOpacity={0.34} />
+                <Stop offset="1" stopColor={colors.primaryLight} stopOpacity={0} />
               </LinearGradient>
             </Defs>
 

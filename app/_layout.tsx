@@ -10,7 +10,7 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <StoreProvider>
-        <StatusBar style="light" />
+        <StatusBar style="dark" />
         <AppShell />
       </StoreProvider>
     </SafeAreaProvider>

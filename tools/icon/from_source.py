@@ -17,12 +17,35 @@ from PIL import Image, ImageFilter
 import numpy as np
 
 SRC = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'source.jpg')
-TOL = 16  # 채널별 허용 오차. 흰색과 크림은 파랑이 19 차이라 이 아래면 둘이 갈린다.
+TOL = 22  # 배경으로 볼 색의 허용 오차(채널별). 아이콘 배경에 은은한 명암이
+          # 깔려 있어 넉넉해야 한다. 종이 여백은 따로 걸러내므로 안전하다.
 
 
-def _warm_mask(a):
-    """따뜻한 밝은 색(= 크림 후보). 자르기 범위를 잡을 때만 쓰는 대충의 마스크."""
-    return (a[:, :, 0] - a[:, :, 2] >= 12) & (a[:, :, 0] > 215)
+def _largest_blob(mask):
+    """mask에서 가장 큰 덩어리만 남긴 마스크."""
+    h, w = mask.shape
+    seen = np.zeros_like(mask)
+    best = None
+    for y0 in range(h):
+        for x0 in range(w):
+            if not mask[y0, x0] or seen[y0, x0]:
+                continue
+            q = deque([(y0, x0)])
+            seen[y0, x0] = True
+            cells = []
+            while q:
+                y, x = q.popleft()
+                cells.append((y, x))
+                for ny, nx in ((y - 1, x), (y + 1, x), (y, x - 1), (y, x + 1)):
+                    if 0 <= ny < h and 0 <= nx < w and mask[ny, nx] and not seen[ny, nx]:
+                        seen[ny, nx] = True
+                        q.append((ny, nx))
+            if best is None or len(cells) > len(best):
+                best = cells
+    out = np.zeros_like(mask)
+    for y, x in best:
+        out[y, x] = True
+    return out
 
 
 def _from_border(mask):
@@ -105,25 +128,41 @@ def fill_big_holes(mask, min_area):
 
 
 def load():
-    """그림에서 크림 사각형만 잘라내고, (crop, 크림색, 마스크들)을 돌려준다."""
+    """그림에서 아이콘 사각형만 잘라내고, (crop, 배경색, 배경마스크, 사각형바깥)을 준다.
+
+    보내주신 이미지는 아이콘이 흰 종이 위에 놓인 형태다(아래에 제목·설명이
+    붙기도 한다). 종이와 아이콘 배경은 색이 아주 가까워서 색만으로는 못 가른다.
+    그래서 두 단계로 나눈다.
+
+      1) 따뜻한 밝은 색 중 '가장 큰 덩어리'를 찾아 아이콘 배경으로 본다.
+         종이의 JPEG 잡티도 따뜻하게 잡히지만, 흩어진 점이라 덩어리가 못 된다.
+      2) 그 덩어리의 구멍(=그림)을 메워 사각형 전체를 얻는다.
+
+    사각형 안쪽만 남으면 종이와 헷갈릴 일이 없으므로, 배경 판정은
+    넉넉하게 잡아도 된다. 아이콘 배경에 은은한 명암이 깔려 있어서 필요하다.
+    """
     src = Image.open(SRC).convert('RGB')
     a = np.asarray(src).astype(int)
-    ys, xs = np.where(_warm_mask(a))
-    L, R, T, B = int(xs.min()), int(xs.max()), int(ys.min()), int(ys.max())
+
+    warm = (a[:, :, 0] - a[:, :, 2] >= 6) & (a[:, :, 0] > 215)
+    blob = _largest_blob(warm)
+    plate = fill_big_holes(blob, min_area=int(blob.sum() * 0.02))
+
+    ys, xs = np.where(plate)
+    T, L, B, R = int(ys.min()), int(xs.min()), int(ys.max()), int(xs.max())
     crop = src.crop((L, T, R + 1, B + 1))
+    outside = ~plate[T:B + 1, L:R + 1]
 
     c = np.asarray(crop).astype(int)
     cx = crop.width // 2
-    # 배경색은 사각형 위쪽 가운데(새싹보다 위)에서 뽑는다. 모서리는 둥글어서 바깥이 잡힌다.
-    cream = np.median(c[30:70, cx - 60:cx + 60].reshape(-1, 3), axis=0).astype(int)
-
-    is_cream = (np.abs(c - cream) <= TOL).all(axis=2)
-    outside = _from_border(~is_cream)
+    y0 = max(2, int(crop.height * 0.05))
+    cream = np.median(c[y0:y0 + 30, cx - 40:cx + 40].reshape(-1, 3), axis=0).astype(int)
+    is_cream = (np.abs(c - cream) <= TOL).all(axis=2) | outside
     return crop, tuple(int(v) for v in cream), is_cream, outside
 
 
 def square():
-    """크림 사각형. 바깥은 같은 크림색으로 메우고 정사각형으로 맞춘다."""
+    """아이콘 사각형. 바깥은 같은 배경색으로 메우고 정사각형으로 맞춘다."""
     crop, cream, _, outside = load()
     a = np.asarray(crop).copy()
     a[outside] = cream
@@ -135,21 +174,29 @@ def square():
     return out, cream
 
 
-def content(trim_text=False):
-    """배경을 지우고 그림만 남긴 RGBA."""
-    crop, _, is_cream, outside = load()
-    keep = ~is_cream & ~outside
+def content(trim_text=False, bg_tol=34):
+    """배경을 지우고 그림만 남긴 RGBA.
+
+    bg_tol이 load()의 TOL보다 넉넉하다. 그림 둘레의 옅은 그림자까지 배경으로
+    넘겨야 투명 배경에 얹었을 때 네모난 자국이 남지 않는다.
+    """
+    crop, cream, _, outside = load()
+    c = np.asarray(crop).astype(int)
+    keep = ~((np.abs(c - np.array(cream)) <= bg_tol).all(axis=2) | outside)
 
     alpha = Image.fromarray(np.where(keep, 255, 0).astype('uint8'), 'L')
     # JPEG 잡티가 배경 곳곳에 점으로 남는다. 한 번 깎았다 부풀려서 지운다.
     alpha = alpha.filter(ImageFilter.MinFilter(3)).filter(ImageFilter.MaxFilter(3))
     keep = np.asarray(alpha) > 127
-    alpha = alpha.filter(ImageFilter.GaussianBlur(0.7))
+    keep = drop_specks(keep, min_area=int(keep.size * 0.0002))
+    alpha = Image.fromarray(np.where(keep, 255, 0).astype('uint8'), 'L') \
+        .filter(ImageFilter.GaussianBlur(0.7))
+
     out = crop.convert('RGBA')
     out.putalpha(alpha)
 
     if trim_text:
-        # 병과 글자 사이에 완전히 빈 줄은 없다(병 그림자와 잎이 걸친다).
+        # 그림과 글자 사이에 완전히 빈 줄은 없다(그림자와 잎이 걸친다).
         # 그래서 아래쪽 절반에서 픽셀이 가장 적은 줄을 경계로 삼는다.
         per_row = keep.sum(axis=1)
         lo, hi = int(keep.shape[0] * 0.55), int(keep.shape[0] * 0.85)

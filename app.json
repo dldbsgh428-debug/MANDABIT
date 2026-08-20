@@ -6,8 +6,8 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "dark",
-    "backgroundColor": "#0B0E14",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#F6F1E8",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
@@ -16,7 +16,7 @@
     "android": {
       "package": "com.moa.money",
       "adaptiveIcon": {
-        "backgroundColor": "#FAF4E8",
+        "backgroundColor": "#FBF8F3",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
