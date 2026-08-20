@@ -456,6 +456,38 @@ describe('projectBalance', () => {
     expect(p.interest).toBeCloseTo((400_000 * 182) / 365, 0);
   });
 
+  it('월복리로 두면 이자에 이자가 붙는다', () => {
+    // 1,000만원, 연 4%, 1년. 단리는 40만원, 월복리는 (1 + 0.04/12)^12 - 1 만큼.
+    const simple = projectBalance(
+      account({ id: 'a', balance: 10_000_000, interestRate: 4 }),
+      '2026-01-01',
+      '2027-01-01',
+    );
+    const compound = projectBalance(
+      account({ id: 'b', balance: 10_000_000, interestRate: 4, interestMode: 'compound' }),
+      '2026-01-01',
+      '2027-01-01',
+    );
+
+    expect(simple.interest).toBe(400_000);
+    expect(compound.interest).toBe(Math.round(10_000_000 * ((1 + 0.04 / 12) ** 12 - 1)));
+    expect(compound.interest).toBeGreaterThan(simple.interest);
+  });
+
+  it('월복리도 기록 시점이 기준이라 이자가 두 번 붙지 않는다', () => {
+    const a = account({ id: 'a', balance: 10_000_000, interestRate: 4, interestMode: 'compound' });
+    // 반년치를 두 번 나눠 계산해도, 한 번에 반년치를 계산한 것과 같아야 한다.
+    const half = projectBalance(a, '2026-01-01', '2026-07-01');
+    const again = projectBalance(
+      { ...a, balance: a.balance + half.interest },
+      '2026-07-01',
+      '2027-01-01',
+    );
+    const full = projectBalance(a, '2026-01-01', '2027-01-01');
+
+    expect(half.interest + again.interest).toBeCloseTo(full.interest, -1);
+  });
+
   it('부채는 추정하지 않는다', () => {
     // 상환 계획을 모르는 채로 빚을 불리면 사용자가 입력한 적 없는 숫자가 된다.
     const loan = account({

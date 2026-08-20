@@ -197,6 +197,7 @@ export interface StoreValue {
     balance: number;
     includeInNetWorth?: boolean;
     interestRate?: number;
+    interestMode?: Account['interestMode'];
     monthlyDeposit?: number;
     memo?: string;
   }) => void;
@@ -264,6 +265,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         balance: input.balance,
         includeInNetWorth: input.includeInNetWorth ?? true,
         interestRate: input.interestRate,
+        interestMode: input.interestMode,
         monthlyDeposit: input.monthlyDeposit,
         memo: input.memo,
         createdAt: now,

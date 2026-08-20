@@ -30,6 +30,9 @@ import {
 
 /* ------------------------------------------------------- 예상 잔액 증가 */
 
+/** 한 달을 며칠로 볼지. 달마다 길이가 달라서 평균값으로 고정한다. */
+const DAYS_PER_MONTH = 365 / 12;
+
 export interface Projection {
   /** 사용자가 마지막으로 입력한 잔액. 이 값은 절대 바뀌지 않는다. */
   recorded: number;
@@ -55,8 +58,10 @@ export interface Projection {
  * 부채는 추정하지 않는다. 상환 계획을 모르는 채로 빚을 불리면 순자산이
  * 실제보다 나쁘게 나오고, 그건 사용자가 입력한 적 없는 숫자다.
  *
- * 이자는 단리로 일할 계산한다. 한국의 정기예금·정기적금이 단리이기 때문이다.
- * 납입금에도 각각 들어간 날부터의 이자가 붙는다.
+ * 이자는 기본이 단리 일할 계산이다. 한국의 정기예금·정기적금이 단리이기 때문이다.
+ * 계좌를 월복리로 지정하면 매달 이자에 이자가 붙는 방식으로 계산한다
+ * (군인공제회처럼 복리로 굴러가는 상품). 납입금에도 각각 들어간 날부터
+ * 이자가 붙는 것은 두 방식이 같다.
  */
 export function projectBalance(
   account: Account,
@@ -84,13 +89,20 @@ export function projectBalance(
   const months = fullMonthsBetween(lastRecordDate, asOf);
   const deposits = monthly * months;
 
-  // 기존 잔액에 붙는 이자
-  let interest = account.balance * yearlyRate * (days / 365);
+  // 이자는 '얼마가 며칠 들어있었나'만 알면 나온다. 단리는 일할로 나누고,
+  // 월복리는 지난 개월수(소수점 포함)만큼 월이율을 거듭제곱한다.
+  const compound = account.interestMode === 'compound';
+  const grow = (principal: number, heldDays: number) =>
+    compound
+      ? principal * ((1 + yearlyRate / 12) ** (heldDays / DAYS_PER_MONTH) - 1)
+      : principal * yearlyRate * (heldDays / 365);
+
+  let interest = grow(account.balance, days);
 
   // 납입금은 들어간 날부터 이자가 붙는다. k번째 납입은 k개월 뒤에 들어갔다고 본다.
   for (let k = 1; k <= months; k++) {
-    const heldDays = days - k * (365 / 12);
-    if (heldDays > 0) interest += monthly * yearlyRate * (heldDays / 365);
+    const heldDays = days - k * DAYS_PER_MONTH;
+    if (heldDays > 0) interest += grow(monthly, heldDays);
   }
 
   const rounded = Math.round(interest);

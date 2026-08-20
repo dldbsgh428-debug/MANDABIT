@@ -35,6 +35,9 @@ export default function AccountEditScreen() {
   const [deposit, setDeposit] = useState(
     existing?.monthlyDeposit ? String(existing.monthlyDeposit) : '',
   );
+  const [interestMode, setInterestMode] = useState<'simple' | 'compound'>(
+    existing?.interestMode ?? 'simple',
+  );
   const [memo, setMemo] = useState(existing?.memo ?? '');
   const [include, setInclude] = useState(existing?.includeInNetWorth ?? true);
 
@@ -67,6 +70,8 @@ export default function AccountEditScreen() {
         kind,
         includeInNetWorth: include,
         interestRate: Number.isFinite(interestRate) ? interestRate : undefined,
+        // 기본값(단리)은 저장하지 않는다. 저장된 데이터에 의미 없는 값이 쌓이지 않게.
+        interestMode: interestMode === 'compound' ? 'compound' : undefined,
         monthlyDeposit,
         memo: memo.trim() || undefined,
       });
@@ -80,6 +85,8 @@ export default function AccountEditScreen() {
         balance: amount,
         includeInNetWorth: include,
         interestRate: Number.isFinite(interestRate) ? interestRate : undefined,
+        // 기본값(단리)은 저장하지 않는다. 저장된 데이터에 의미 없는 값이 쌓이지 않게.
+        interestMode: interestMode === 'compound' ? 'compound' : undefined,
         monthlyDeposit,
         memo: memo.trim() || undefined,
       });
@@ -149,6 +156,22 @@ export default function AccountEditScreen() {
       >
         <Input value={rate} onChangeText={setRate} placeholder="3.5" keyboardType="decimal-pad" />
       </Field>
+
+      {side === 'asset' && rate ? (
+        <Field
+          label="이자 방식"
+          hint="예금·적금은 보통 단리입니다. 군인공제회처럼 매달 이자에 이자가 붙는 상품은 월복리를 고르세요."
+        >
+          <Segmented
+            options={[
+              { value: 'simple' as const, label: '단리' },
+              { value: 'compound' as const, label: '월복리' },
+            ]}
+            value={interestMode}
+            onChange={setInterestMode}
+          />
+        </Field>
+      ) : null}
 
       {side === 'asset' ? (
         <Field
