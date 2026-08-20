@@ -65,8 +65,10 @@ export const fonts = {
   regular: 'Pretendard',
   semibold: 'Pretendard-SemiBold',
   bold: 'Pretendard-Bold',
-  /** 제목·부제용 둥근 글씨체 */
+  /** 부제·섹션 제목용 둥근 글씨체 */
   display: 'NanumSquareRound-Bold',
+  /** 앱 제목처럼 가장 세게 눌러야 하는 자리 */
+  displayHeavy: 'NanumSquareRound-ExtraBold',
 };
 
 /** fontWeight 값에 맞는 폰트 이름. 600 이상은 굵게, 500은 중간. */

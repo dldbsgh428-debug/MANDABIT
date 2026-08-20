@@ -25,6 +25,7 @@ function AppShell() {
     'Pretendard-SemiBold': require('../assets/fonts/Pretendard-SemiBold.otf'),
     'Pretendard-Bold': require('../assets/fonts/Pretendard-Bold.otf'),
     'NanumSquareRound-Bold': require('../assets/fonts/NanumSquareRound-Bold.ttf'),
+    'NanumSquareRound-ExtraBold': require('../assets/fonts/NanumSquareRound-ExtraBold.ttf'),
   });
 
   // 저장된 데이터를 다 읽기 전에는 어떤 화면도 띄우지 않는다.

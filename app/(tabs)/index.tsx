@@ -297,7 +297,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: spacing.lg,
   },
-  greeting: { color: colors.text, fontSize: font.h1 + 8, fontFamily: fonts.display, letterSpacing: -0.5 },
+  greeting: {
+    color: colors.text,
+    fontSize: font.h1 + 8,
+    fontFamily: fonts.displayHeavy,
+    letterSpacing: -0.5,
+  },
   tagline: { color: colors.textMuted, fontSize: font.small, marginTop: 4, fontFamily: fonts.display },
   // 부제가 생겨 줄이 하나 늘었다. 날짜는 한 단계 더 흐리게 해서 순서를 만든다.
   headerSub: { color: colors.textFaint, fontSize: font.tiny, marginTop: 5 },
