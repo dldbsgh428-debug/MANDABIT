@@ -138,7 +138,34 @@ export default function ReportScreen() {
               </View>
               <DeltaBadge value={report.netWorthDelta} suffix="원" />
             </View>
-            <Text style={styles.hint}>기록된 잔액 기준. 전월 말과 비교합니다.</Text>
+
+            {report.gain.available ? (
+              <>
+                {/* 늘어난 돈이 내 저축인지 수익인지 나눠 본다. 목표까지 남은 거리를
+                    좁히는 두 가지 방법이 서로 다른 일이기 때문이다. */}
+                <View style={styles.gainRow}>
+                  <Text style={styles.gainLabel}>내가 넣은 돈</Text>
+                  <Text style={styles.gainValue}>{won(report.gain.saved)}</Text>
+                </View>
+                <View style={styles.gainRow}>
+                  <Text style={styles.gainLabel}>불어난 돈</Text>
+                  <Text
+                    style={[
+                      styles.gainValue,
+                      { color: report.gain.gained >= 0 ? colors.up : colors.down },
+                    ]}
+                  >
+                    {report.gain.gained >= 0 ? '+' : '-'}
+                    {won(Math.abs(report.gain.gained))}
+                  </Text>
+                </View>
+              </>
+            ) : null}
+
+            <Text style={styles.hint}>
+              기록된 잔액 기준. 전월 말과 비교합니다.
+              {report.gain.available ? '' : ' 계좌에 원금을 적어두면 저축과 수익을 나눠 볼 수 있어요.'}
+            </Text>
           </Card>
 
           {/* 카테고리별 지출 */}
@@ -299,6 +326,14 @@ const styles = StyleSheet.create({
 
   netRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   netValue: { color: colors.text, fontSize: font.h2, fontWeight: '700', marginTop: 2 },
+  gainRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: spacing.sm,
+  },
+  gainLabel: { color: colors.textMuted, fontSize: font.small },
+  gainValue: { color: colors.text, fontSize: font.body, fontWeight: '700' },
 
   list: { marginTop: spacing.lg },
   catRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.sm },

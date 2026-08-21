@@ -265,6 +265,163 @@ export function netWorthAt(
   return { assets, liabilities, net: assets - liabilities };
 }
 
+/* ------------------------------------------------- 내 돈 vs 불어난 돈 */
+
+export interface SavedVsGained {
+  /** 원금을 적어둔 자산 계좌의 원금 합계. */
+  principal: number;
+  /** 그 계좌들의 잔액에서 원금을 뺀 몫. 평가손실이면 음수. */
+  gain: number;
+  /** 나눠 볼 수 있는 계좌 수. */
+  tracked: number;
+  /** 원금을 안 적어 나눌 수 없는 자산 계좌 수. */
+  untracked: number;
+}
+
+/**
+ * 자산을 '내가 넣은 돈'과 '불어난 돈'으로 나눈다.
+ *
+ * 원금을 적어둔 계좌만 센다. 안 적은 계좌를 원금 0으로 치면 잔액 전부가
+ * 수익으로 잡혀 숫자가 거짓말이 된다. 대신 몇 개가 빠졌는지 함께 돌려줘서
+ * 화면에서 '일부만 본 값'이라고 밝힐 수 있게 한다.
+ */
+export function savedVsGained(
+  accounts: Account[],
+  balances?: Map<string, Projection>,
+): SavedVsGained {
+  let principal = 0;
+  let gain = 0;
+  let tracked = 0;
+  let untracked = 0;
+
+  for (const account of accounts) {
+    if (!account.includeInNetWorth || account.side !== 'asset') continue;
+
+    if (account.principal === undefined) {
+      untracked += 1;
+      continue;
+    }
+
+    const projection = balances?.get(account.id);
+    const balance = projection?.total ?? account.balance;
+    // 예상 납입금은 내가 넣을 돈이므로 원금 쪽에 붙인다.
+    const base = account.principal + (projection?.deposits ?? 0);
+
+    principal += base;
+    gain += balance - base;
+    tracked += 1;
+  }
+
+  return { principal, gain, tracked, untracked };
+}
+
+/** 그 달 말 기준의 원금 합계. 기록에 원금이 없는 계좌는 빠진다. */
+export function principalAt(
+  accounts: Account[],
+  snapshots: BalanceSnapshot[],
+  month: MonthKey,
+): { principal: number; balance: number } {
+  const cutoff = endOfMonth(month);
+  let principal = 0;
+  let balance = 0;
+
+  for (const account of accounts) {
+    if (!account.includeInNetWorth || account.side !== 'asset') continue;
+
+    let latest: BalanceSnapshot | undefined;
+    for (const s of snapshots) {
+      if (s.accountId !== account.id) continue;
+      if (s.date > cutoff) continue;
+      if (s.principal === undefined) continue;
+      if (!latest || s.date >= latest.date) latest = s;
+    }
+    if (!latest || latest.principal === undefined) continue;
+
+    principal += latest.principal;
+    balance += latest.balance;
+  }
+
+  return { principal, balance };
+}
+
+export interface MonthlyGain {
+  /** 그 달에 늘어난 원금(= 내가 넣은 돈). */
+  saved: number;
+  /** 그 달에 불어난 몫(= 돈이 벌어온 것). */
+  gained: number;
+  /** 두 달 다 원금이 기록돼 있어야 나눌 수 있다. */
+  available: boolean;
+}
+
+/**
+ * 한 달 사이 늘어난 자산을 '내가 넣은 돈'과 '불어난 돈'으로 나눈다.
+ *
+ * 전월 말과 이번 달 말의 원금 차이가 내가 넣은 돈이고, 잔액 증가에서 그걸
+ * 빼면 불어난 몫이다. 어느 한쪽 달이라도 원금 기록이 없으면 나눌 수 없다.
+ */
+export function monthlyGain(
+  accounts: Account[],
+  snapshots: BalanceSnapshot[],
+  month: MonthKey,
+): MonthlyGain {
+  const now = principalAt(accounts, snapshots, month);
+  const before = principalAt(accounts, snapshots, addMonths(month, -1));
+
+  if (now.principal === 0 && before.principal === 0) {
+    return { saved: 0, gained: 0, available: false };
+  }
+
+  const saved = now.principal - before.principal;
+  return { saved, gained: now.balance - before.balance - saved, available: true };
+}
+
+/* ------------------------------------------------------- 실효 수익률 */
+
+export interface EffectiveRate {
+  /** 연 환산 수익률. 0.045면 연 4.5%. */
+  annual: number;
+  /** 계산에 쓴 기간(일). */
+  days: number;
+  from: ISODate;
+  to: ISODate;
+  /** 그 기간에 실제로 불어난 금액. */
+  gain: number;
+}
+
+/**
+ * 기록만 보고 실제 수익률을 역산한다.
+ *
+ * 입력한 금리를 믿는 대신, 원금과 잔액이 어떻게 움직였는지에서 뽑는다.
+ * 상품이 언제 이자를 붙이는지, 소수점을 어떻게 처리하는지 몰라도 결과가
+ * 맞는다는 게 장점이다.
+ *
+ * 기간 중에 납입이 들어오므로 단순히 시작 잔액으로 나누면 수익률이 부풀려진다.
+ * 납입이 기간 한가운데 들어왔다고 보고 분모를 잡는다(Modified Dietz).
+ */
+export function effectiveRate(
+  account: Account,
+  snapshots: BalanceSnapshot[],
+  minDays = 30,
+): EffectiveRate | null {
+  const rows = snapshots
+    .filter((s) => s.accountId === account.id && s.principal !== undefined)
+    .sort((a, b) => a.date.localeCompare(b.date));
+  if (rows.length < 2) return null;
+
+  const first = rows[0];
+  const last = rows[rows.length - 1];
+  const days = daysBetween(first.date, last.date);
+  if (days < minDays) return null;
+
+  const deposited = (last.principal ?? 0) - (first.principal ?? 0);
+  const gain = last.balance - first.balance - deposited;
+  // 시작 잔액 + 기간 중 납입의 절반. 납입이 한가운데 들어왔다고 보는 근사다.
+  const base = first.balance + deposited / 2;
+  if (base <= 0) return null;
+
+  return { annual: (gain / base) * (365 / days), days, from: first.date, to: last.date, gain };
+}
+
 export interface NetWorthPoint extends NetWorth {
   month: MonthKey;
   /** 전월 대비 순자산 증감. 첫 달은 0. */

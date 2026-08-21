@@ -8,8 +8,14 @@
  */
 
 import type { AppData, Category, MonthKey, Transaction, TxType } from '../types';
-import type { BudgetLine, Cashflow, CategorySlice, RecurringStatus } from './analytics';
-import { budgetStatus, netWorthAt, recurringStatus } from './analytics';
+import type {
+  BudgetLine,
+  Cashflow,
+  CategorySlice,
+  MonthlyGain,
+  RecurringStatus,
+} from './analytics';
+import { budgetStatus, monthlyGain, netWorthAt, recurringStatus } from './analytics';
 import { addMonths, endOfMonth, monthOf, today } from './date';
 
 export interface CategoryChange extends CategorySlice {
@@ -39,6 +45,8 @@ export interface MonthlyReport {
   /** 그 달 말 기준 순자산과 전월 대비 증가액. */
   netWorth: number;
   netWorthDelta: number;
+  /** 그 증가분을 '내가 넣은 돈'과 '불어난 돈'으로 나눈 것. */
+  gain: MonthlyGain;
 
   /** 지출 카테고리(금액 큰 순) + 지난달 같은 기간 대비. */
   categories: CategoryChange[];
@@ -158,6 +166,7 @@ export function monthlyReport(data: AppData, month: MonthKey, asOf = today()): M
     savingTarget: data.settings.monthlySavingTarget,
     netWorth: net,
     netWorthDelta: net - netBefore,
+    gain: monthlyGain(data.accounts, data.snapshots, month),
     categories,
     surged,
     overBudget,
@@ -203,6 +212,16 @@ function buildNotes(r: MonthlyReport): ReportNote[] {
       text: `${c.name} 지출이 지난달보다 ${won(c.delta)} 늘었어요${
         c.rate !== undefined ? ` (${pct(c.rate)}↑)` : ''
       }.`,
+    });
+  }
+
+  if (r.gain.available && r.gain.gained !== 0) {
+    notes.push({
+      tone: r.gain.gained > 0 ? 'good' : 'info',
+      text:
+        r.gain.gained > 0
+          ? `돈이 스스로 ${won(r.gain.gained)} 벌어왔어요.`
+          : `평가액이 ${won(-r.gain.gained)} 줄었어요.`,
     });
   }
 

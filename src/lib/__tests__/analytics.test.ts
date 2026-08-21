@@ -10,7 +10,10 @@
 import {
   assetAllocation,
   lastRecordDate,
+  effectiveRate,
+  monthlyGain,
   principalSplit,
+  savedVsGained,
   projectBalance,
   budgetStatus,
   categoryBreakdown,
@@ -444,6 +447,98 @@ describe('principalSplit', () => {
     const s = principalSplit(50_000, 0);
     expect(s?.gain).toBe(50_000);
     expect(s?.rate).toBeNull();
+  });
+});
+
+describe('savedVsGained', () => {
+  it('원금을 적어둔 계좌만 나누고, 못 나눈 계좌 수를 알려준다', () => {
+    // 원금을 안 적은 계좌를 0으로 치면 잔액 전부가 수익으로 잡혀 거짓말이 된다.
+    const result = savedVsGained([
+      account({ id: 'a', balance: 10_000_000, principal: 9_000_000 }),
+      account({ id: 'b', balance: 5_000_000 }),
+      account({ id: 'c', balance: 3_000_000, side: 'liability', kind: 'loan' }),
+    ]);
+
+    expect(result.principal).toBe(9_000_000);
+    expect(result.gain).toBe(1_000_000);
+    expect(result.tracked).toBe(1);
+    expect(result.untracked).toBe(1); // 부채는 세지 않는다
+  });
+
+  it('예상 납입금은 원금 쪽으로 붙인다', () => {
+    // 앞으로 넣을 돈은 내가 넣는 돈이지 불어난 돈이 아니다.
+    const a = account({ id: 'a', balance: 1_000_000, principal: 1_000_000 });
+    const balances = new Map([
+      [
+        'a',
+        {
+          recorded: 1_000_000,
+          deposits: 500_000,
+          interest: 10_000,
+          total: 1_510_000,
+          days: 30,
+          hasProjection: true,
+        },
+      ],
+    ]);
+
+    const result = savedVsGained([a], balances);
+    expect(result.principal).toBe(1_500_000);
+    expect(result.gain).toBe(10_000);
+  });
+});
+
+describe('monthlyGain', () => {
+  it('원금 증가는 저축, 나머지는 수익으로 나눈다', () => {
+    const a = account({ id: 'a', balance: 3_100_000, principal: 3_000_000 });
+    const snaps = [
+      { ...snapshot('a', '2026-07-31', 2_050_000), principal: 2_000_000 },
+      { ...snapshot('a', '2026-08-31', 3_100_000), principal: 3_000_000 },
+    ];
+
+    const g = monthlyGain([a], snaps, '2026-08');
+
+    expect(g.available).toBe(true);
+    expect(g.saved).toBe(1_000_000); // 원금 200만 -> 300만
+    expect(g.gained).toBe(50_000); // 잔액은 105만 늘었으니 나머지 5만이 수익
+  });
+
+  it('원금 기록이 없으면 나누지 않는다', () => {
+    const a = account({ id: 'a', balance: 1_000_000 });
+    const snaps = [snapshot('a', '2026-07-31', 900_000), snapshot('a', '2026-08-31', 1_000_000)];
+
+    expect(monthlyGain([a], snaps, '2026-08').available).toBe(false);
+  });
+});
+
+describe('effectiveRate', () => {
+  it('납입을 감안해 실제 수익률을 역산한다', () => {
+    // 1년 동안: 시작 1,000만(원금 1,000만) -> 끝 2,100만(원금 2,000만).
+    // 납입 1,000만, 불어난 몫 100만. 분모는 1,000만 + 납입의 절반 500만 = 1,500만.
+    const a = account({ id: 'a', balance: 21_000_000, principal: 20_000_000 });
+    const snaps = [
+      { ...snapshot('a', '2026-01-01', 10_000_000), principal: 10_000_000 },
+      { ...snapshot('a', '2027-01-01', 21_000_000), principal: 20_000_000 },
+    ];
+
+    const r = effectiveRate(a, snaps);
+
+    expect(r?.gain).toBe(1_000_000);
+    expect(r?.annual).toBeCloseTo(1_000_000 / 15_000_000, 4);
+    expect(r?.days).toBe(365);
+  });
+
+  it('기록이 하나뿐이거나 기간이 짧으면 내지 않는다', () => {
+    // 며칠치로 연 환산하면 말도 안 되는 숫자가 나온다.
+    const a = account({ id: 'a', balance: 1_010_000, principal: 1_000_000 });
+    const one = [{ ...snapshot('a', '2026-01-01', 1_000_000), principal: 1_000_000 }];
+    expect(effectiveRate(a, one)).toBeNull();
+
+    const tooShort = [
+      ...one,
+      { ...snapshot('a', '2026-01-10', 1_010_000), principal: 1_000_000 },
+    ];
+    expect(effectiveRate(a, tooShort)).toBeNull();
   });
 });
 

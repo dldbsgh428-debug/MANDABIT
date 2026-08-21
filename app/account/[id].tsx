@@ -6,7 +6,7 @@ import React, { useMemo, useState } from 'react';
 import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { Text } from '../../src/components/Typo';
 
-import { principalSplit, projectBalance } from '../../src/lib/analytics';
+import { effectiveRate, principalSplit, projectBalance } from '../../src/lib/analytics';
 import { LineChart } from '../../src/components/charts';
 import { FormScreen } from '../../src/components/FormScreen';
 import { DateField } from '../../src/components/DateField';
@@ -19,7 +19,7 @@ import { accountKindMeta, colors, font, radius, spacing } from '../../src/theme'
 export default function AccountDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data, setBalance, removeSnapshot } = useStore();
+  const { data, setBalance, removeSnapshot, updateAccount } = useStore();
 
   const account = data.accounts.find((a) => a.id === id);
 
@@ -73,6 +73,13 @@ export default function AccountDetailScreen() {
       ? undefined
       : account.principal + (projection?.deposits ?? 0),
   );
+
+  // 입력한 금리 대신 기록에서 실제 수익률을 뽑는다. 상품이 언제 이자를 붙이는지
+  // 몰라도 결과가 맞는다.
+  // 불어난 게 0원이면 보여줄 말이 없다. '연 0%'만 뜨면 화면만 어지럽다.
+  const measured = effectiveRate(account, data.snapshots);
+  const effective = measured && measured.gain !== 0 ? measured : null;
+  const effectivePercent = effective ? Math.round(effective.annual * 1000) / 10 : 0;
 
   // 오래된 순서로 뒤집어야 차트가 왼쪽에서 오른쪽으로 흐른다.
   const chartPoints = [...history]
@@ -185,6 +192,41 @@ export default function AccountDetailScreen() {
         ) : null}
         {account.memo ? <Text style={styles.heroMemo}>{account.memo}</Text> : null}
       </Card>
+
+      {/* 기록에서 역산한 수익률 */}
+      {effective ? (
+        <Card style={{ marginTop: spacing.md }}>
+          <View style={styles.effectiveHead}>
+            <Text style={styles.effectiveTitle}>기록으로 계산한 수익률</Text>
+            <Text style={styles.effectiveValue}>연 {effectivePercent}%</Text>
+          </View>
+          <Text style={styles.effectiveHint}>
+            {formatDateFull(effective.from)}부터 {effective.days}일 동안 납입금을 빼고 실제로{' '}
+            {won(effective.gain)} 불어났어요.
+            {account.interestRate ? ` 입력한 금리는 연 ${account.interestRate}%입니다.` : ''}
+          </Text>
+          {effectivePercent > 0 && effectivePercent !== account.interestRate ? (
+            <Button
+              title={`금리를 연 ${effectivePercent}%로 바꾸기`}
+              variant="ghost"
+              onPress={() =>
+                Alert.alert(
+                  '금리를 바꿀까요?',
+                  `예상 잔액을 연 ${effectivePercent}%로 계산하게 됩니다.`,
+                  [
+                    { text: '취소', style: 'cancel' },
+                    {
+                      text: '바꾸기',
+                      onPress: () => updateAccount(account.id, { interestRate: effectivePercent }),
+                    },
+                  ],
+                )
+              }
+              style={{ marginTop: spacing.sm }}
+            />
+          ) : null}
+        </Card>
+      ) : null}
 
       {/* 잔액 업데이트 */}
       {open ? (
@@ -310,6 +352,10 @@ const styles = StyleSheet.create({
   hero: { alignItems: 'center', gap: 6 },
   heroKind: { color: colors.textFaint, fontSize: font.tiny },
   heroValue: { color: colors.text, fontSize: font.h1, fontWeight: '800' },
+  effectiveHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  effectiveTitle: { color: colors.textMuted, fontSize: font.small },
+  effectiveValue: { color: colors.up, fontSize: font.h3, fontWeight: '700' },
+  effectiveHint: { color: colors.textFaint, fontSize: font.tiny, marginTop: spacing.sm, lineHeight: 17 },
   splitRow: {
     flexDirection: 'row',
     justifyContent: 'center',

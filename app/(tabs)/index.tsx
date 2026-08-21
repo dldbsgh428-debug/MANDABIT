@@ -16,6 +16,7 @@ import {
   monthlyCashflow,
   netWorthSeries,
   requiredMonthlySaving,
+  savedVsGained,
   seriesStartMonth,
 } from '../../src/lib/analytics';
 import {
@@ -58,11 +59,22 @@ export default function Dashboard() {
     const allocation = assetAllocation(data.accounts, balances);
     const current = series.length > 0 ? series[series.length - 1] : null;
     const elapsedMonths = monthsBetween(monthOf(data.settings.startDate), month);
+    const saved = savedVsGained(data.accounts, balances);
 
-    return { month, series, forecast, required, cashflow, allocation, current, elapsedMonths };
+    return {
+      month,
+      series,
+      forecast,
+      required,
+      cashflow,
+      allocation,
+      current,
+      elapsedMonths,
+      saved,
+    };
   }, [data]);
 
-  const { series, forecast, required, cashflow, allocation, current } = view;
+  const { series, forecast, required, cashflow, allocation, current, saved } = view;
   const net = current?.net ?? 0;
   const hasHistory = series.length >= 2;
 
@@ -200,6 +212,32 @@ export default function Dashboard() {
             {current && current.liabilities > 0 ? `-${won(current.liabilities)}` : won(0)}
           </Text>
         </View>
+
+        {/* 목표까지 남은 거리를 좁히는 방법은 둘이다. 더 넣거나, 불어나거나.
+            둘을 갈라놔야 어느 쪽이 일하고 있는지 보인다. */}
+        {saved.tracked > 0 ? (
+          <>
+            <Divider />
+            <View style={styles.row}>
+              <Text style={styles.rowLabel}>내가 넣은 돈</Text>
+              <Text style={styles.rowValue}>{won(saved.principal)}</Text>
+            </View>
+            <View style={styles.row}>
+              <Text style={styles.rowLabel}>불어난 돈</Text>
+              <Text
+                style={[styles.rowValue, { color: saved.gain >= 0 ? colors.up : colors.down }]}
+              >
+                {saved.gain >= 0 ? '+' : '-'}
+                {won(Math.abs(saved.gain))}
+              </Text>
+            </View>
+            {saved.untracked > 0 ? (
+              <Text style={styles.placeholder}>
+                원금을 적어둔 계좌 {saved.tracked}개 기준 · {saved.untracked}개는 원금을 몰라 빠졌어요.
+              </Text>
+            ) : null}
+          </>
+        ) : null}
       </Card>
 
       {/* ------------------------------------------------------ 이번 달 요약 */}
