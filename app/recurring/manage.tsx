@@ -1,4 +1,10 @@
-/** 고정지출 관리: 매달 나가는 돈을 등록해두고 한 번에 가계부에 반영한다. */
+/**
+ * 고정지출 관리: 매달 나가는 돈을 등록해두고 가계부에 반영한다.
+ *
+ * 적금·투자 이체는 여기 넣으면 안 된다. 그건 나간 돈이 아니라 내 계좌 사이를
+ * 옮긴 것이라, 지출로 잡으면 저축률이 거꾸로 떨어진다. 계좌의 '월 납입액'에
+ * 적어야 자산이 늘어나는 쪽으로 계산된다.
+ */
 
 import { Ionicons } from '@expo/vector-icons';
 import React, { useMemo, useState } from 'react';
@@ -143,6 +149,11 @@ export default function RecurringManageScreen() {
           }
         />
       ) : null}
+
+      <Text style={styles.notice}>
+        적금·투자 이체는 넣지 마세요. 지출이 아니라 내 계좌 사이를 옮긴 것이라, 여기 넣으면
+        저축률이 거꾸로 떨어져요. 계좌 편집의 &apos;월 납입액&apos;에 적으면 자산이 알아서 늘어납니다.
+      </Text>
 
       {view.rows.length > 0 ? (
         <>
@@ -355,6 +366,15 @@ const styles = StyleSheet.create({
   totalHint: { color: colors.textMuted, fontSize: font.small },
   doneText: { color: colors.up, fontSize: font.small, marginTop: spacing.sm },
 
+  notice: {
+    color: colors.textMuted,
+    fontSize: font.small,
+    lineHeight: 20,
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    marginTop: spacing.lg,
+  },
   sectionTitle: {
     color: colors.text,
     fontSize: font.h3,
