@@ -192,9 +192,17 @@ export default function AccountEditScreen() {
           </Field>
           <Field
             label={gainLabel}
-            hint={`합계 ${won(parseAmount(principal) + parseAmount(gain))}`}
+            hint={
+              gainLabel === '평가손익'
+                ? `합계 ${won(parseAmount(principal) + parseAmount(gain))} · 손실이면 왼쪽 버튼으로 −를 켜세요.`
+                : `합계 ${won(parseAmount(principal) + parseAmount(gain))}`
+            }
           >
-            <AmountInput value={gain} onChangeText={setGain} />
+            <AmountInput
+              value={gain}
+              onChangeText={setGain}
+              allowNegative={gainLabel === '평가손익'}
+            />
           </Field>
         </>
       ) : (

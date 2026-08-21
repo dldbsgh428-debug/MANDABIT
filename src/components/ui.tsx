@@ -240,17 +240,38 @@ export function AmountInput({
   onChangeText,
   placeholder = '0',
   suffix = '원',
+  allowNegative = false,
 }: {
   value: string;
   onChangeText: (digits: string) => void;
   placeholder?: string;
   suffix?: string;
+  /** 손실처럼 음수가 될 수 있는 값. 숫자 키패드에는 마이너스가 없어서 버튼으로 넣는다. */
+  allowNegative?: boolean;
 }) {
+  const negative = value.trimStart().startsWith('-');
+  const toggleSign = () => {
+    const digits = value.replace(/[^0-9]/g, '');
+    onChangeText(negative ? digits : `-${digits}`);
+  };
+
   return (
     <View style={styles.amountWrap}>
+      {allowNegative ? (
+        <Pressable onPress={toggleSign} hitSlop={6} style={styles.signButton}>
+          <Text style={[styles.signText, negative && { color: colors.down }]}>
+            {negative ? '−' : '+'}
+          </Text>
+        </Pressable>
+      ) : null}
       <TextInput
         value={formatAmountInput(value)}
-        onChangeText={(t) => onChangeText(t.replace(/[^0-9]/g, ''))}
+        onChangeText={(t) => {
+          const digits = t.replace(/[^0-9]/g, '');
+          // 타이핑 중에 부호가 사라지면 안 된다. 버튼으로 정한 부호를 유지한다.
+          const sign = allowNegative && (negative || t.trimStart().startsWith('-')) ? '-' : '';
+          onChangeText(digits ? `${sign}${digits}` : sign);
+        }}
         placeholder={placeholder}
         placeholderTextColor={colors.textFaint}
         keyboardType="number-pad"
@@ -416,6 +437,14 @@ const styles = StyleSheet.create({
   },
   inputMultiline: { minHeight: 72, textAlignVertical: 'top' },
 
+  signButton: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    marginRight: spacing.sm,
+    borderRadius: radius.sm,
+    backgroundColor: colors.surface,
+  },
+  signText: { color: colors.textMuted, fontSize: font.h3, fontWeight: '800' },
   amountWrap: {
     flexDirection: 'row',
     alignItems: 'center',

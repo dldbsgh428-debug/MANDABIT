@@ -51,17 +51,23 @@ export function axisWon(value: number): string {
 
 /** 입력창의 문자열에서 숫자만 뽑아낸다. "1,000원" -> 1000 */
 export function parseAmount(text: string): number {
+  // 앞에 붙은 마이너스만 부호로 본다. 주식 평가손익처럼 음수가 되는 값이 있다.
+  const negative = text.trimStart().startsWith('-');
   const digits = text.replace(/[^0-9]/g, '');
   if (!digits) return 0;
   const n = Number(digits);
-  return Number.isFinite(n) ? n : 0;
+  if (!Number.isFinite(n)) return 0;
+  // -0은 화면에 '-0원'으로 새어 나온다. 0은 부호 없이 돌려준다.
+  return negative && n !== 0 ? -n : n;
 }
 
 /** 입력창에 보여줄 콤마 포맷. 빈 값은 빈 문자열로 유지해야 지울 수 있다. */
 export function formatAmountInput(text: string): string {
+  const negative = text.trimStart().startsWith('-');
   const digits = text.replace(/[^0-9]/g, '');
-  if (!digits) return '';
-  return Number(digits).toLocaleString('ko-KR');
+  // 부호만 눌러둔 상태('-')도 그대로 보여줘야 다음 숫자를 이어 칠 수 있다.
+  if (!digits) return negative ? '-' : '';
+  return `${negative ? '-' : ''}${Number(digits).toLocaleString('ko-KR')}`;
 }
 
 /** 0~1 비율을 "12.3%"로. */

@@ -157,3 +157,22 @@ describe('날짜 유틸', () => {
     expect(formatDateFull('2026-03-01')).toBe('2026년 3월 1일 (일)');
   });
 });
+
+describe('음수 입력', () => {
+  it('앞에 붙은 마이너스를 부호로 읽는다', () => {
+    // 주식 평가손익은 음수가 된다.
+    expect(parseAmount('-800,000')).toBe(-800_000);
+    expect(parseAmount('-0')).toBe(0);
+  });
+
+  it('숫자 중간의 하이픈은 부호가 아니다', () => {
+    // 전화번호처럼 붙여 쓴 하이픈까지 부호로 보면 엉뚱한 값이 된다.
+    expect(parseAmount('010-1234')).toBe(101_234);
+  });
+
+  it('부호만 눌러둔 상태를 지우지 않는다', () => {
+    // '-'만 남기지 않으면 다음 숫자를 이어 칠 수 없다.
+    expect(formatAmountInput('-')).toBe('-');
+    expect(formatAmountInput('-800000')).toBe('-800,000');
+  });
+});
