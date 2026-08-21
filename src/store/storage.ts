@@ -62,7 +62,24 @@ function mergeCategories(saved: Category[] | undefined): Category[] {
 
   const existing = new Set(saved.map((c) => c.id));
   const added = defaults.filter((c) => !existing.has(c.id));
-  return added.length > 0 ? [...saved, ...added] : saved;
+  const merged = added.length > 0 ? [...saved, ...added] : saved;
+  return merged.map(retouchEmoji);
+}
+
+/**
+ * 기본 카테고리의 이모지를 바꿨을 때, 이미 쓰고 있던 사용자에게도 반영한다.
+ *
+ * 손대지 않은 것만 바꾼다. 예전 이모지 그대로일 때만 새 것으로 옮기므로,
+ * 사용자가 직접 고른 이모지는 건드리지 않는다.
+ */
+const EMOJI_RETOUCH: Record<string, { from: string; to: string }> = {
+  'exp-meeting': { from: '🍻', to: '👥' },
+};
+
+function retouchEmoji(category: Category): Category {
+  const rule = EMOJI_RETOUCH[category.id];
+  if (!rule || category.emoji !== rule.from) return category;
+  return { ...category, emoji: rule.to };
 }
 
 /**

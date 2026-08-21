@@ -109,3 +109,25 @@ describe('parseBackup', () => {
     expect(restored.categories.length).toBeGreaterThan(0);
   });
 });
+
+describe('기본 카테고리 이모지 갱신', () => {
+  it('손대지 않은 이모지만 새 것으로 바꾼다', () => {
+    const saved = migrate({
+      version: 1,
+      categories: [
+        { id: 'exp-meeting', name: '모임·회비', type: 'expense', emoji: '🍻', isDefault: true },
+      ],
+    });
+    expect(saved.categories.find((c) => c.id === 'exp-meeting')?.emoji).toBe('👥');
+  });
+
+  it('사용자가 고른 이모지는 그대로 둔다', () => {
+    const saved = migrate({
+      version: 1,
+      categories: [
+        { id: 'exp-meeting', name: '모임·회비', type: 'expense', emoji: '🎳', isDefault: true },
+      ],
+    });
+    expect(saved.categories.find((c) => c.id === 'exp-meeting')?.emoji).toBe('🎳');
+  });
+});
