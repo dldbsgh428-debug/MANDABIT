@@ -1,0 +1,48 @@
+# PR마다 계산 로직과 타입을 확인한다.
+#
+# 이 앱은 화면 테스트가 없다. 대신 돈 계산(순자산·저축률·달성 예측·검색·알림
+# 시각)을 순수 함수로 떼어내 테스트로 덮어뒀고, 그게 틀리면 사용자가 잘못된
+# 숫자를 믿게 되므로 여기를 먼저 지킨다.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  check:
+    name: 타입·테스트
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # Expo SDK 57은 Node 20 이상을 요구한다.
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run typecheck
+
+      - run: npm test
+
+  bundle:
+    # 타입 검사가 못 잡는 것을 잡는다. 네이티브 전용 모듈을 웹 번들에
+    # 끌어들이거나 metro가 경로를 못 찾는 종류의 문제는 tsc를 통과하고
+    # 앱을 열어야만 터진다. 묶어보는 것만으로 대부분 걸러진다.
+    name: 웹 번들
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npx expo export --platform web --output-dir /tmp/web-export
