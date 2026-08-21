@@ -26,6 +26,7 @@ import type {
   Settings,
   Transaction,
 } from '../types';
+import { pendingAutoRecurring } from '../lib/analytics';
 import { today } from '../lib/date';
 import { initialData } from './defaults';
 import { loadData, saveData } from './storage';
@@ -258,6 +259,23 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     loadData().then((loaded) => {
       if (cancelled) return;
       dispatch({ type: 'hydrate', data: loaded });
+
+      // 결제일이 지난 고정지출은 앱을 열 때 알아서 넣는다. 매달 같은 금액이
+      // 나가는 걸 아는데 사람이 다시 타이핑할 이유가 없다.
+      if (loaded.settings.autoRecurring) {
+        const pending = pendingAutoRecurring(loaded);
+        if (pending.length > 0) {
+          dispatch({
+            type: 'tx/addMany',
+            items: pending.map((t) => ({
+              ...t,
+              id: makeId('tx'),
+              createdAt: new Date().toISOString(),
+            })),
+          });
+        }
+      }
+
       hydrated.current = true;
       setReady(true);
     });

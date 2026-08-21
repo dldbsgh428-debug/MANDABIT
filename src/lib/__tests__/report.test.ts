@@ -47,6 +47,7 @@ function appData(over: Partial<AppData> = {}): AppData {
       startDate: '2026-01-01',
       showForecastLine: true,
       projectBalances: true,
+      autoRecurring: true,
     },
     accounts: [],
     snapshots: [],

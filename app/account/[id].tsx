@@ -33,7 +33,8 @@ export default function AccountDetailScreen() {
   const [amount, setAmount] = useState('');
   // 원금을 적어둔 계좌는 기록할 때도 원금과 이자를 나눠 받는다.
   const [principalInput, setPrincipalInput] = useState('');
-  const [gainInput, setGainInput] = useState('');
+  // 원금은 앱이 굴려서 채운다. 실제와 다를 때만 사람이 고친다.
+  const [editPrincipal, setEditPrincipal] = useState(false);
   const [date, setDate] = useState(today());
   const [memo, setMemo] = useState('');
   const [open, setOpen] = useState(false);
@@ -86,22 +87,25 @@ export default function AccountDetailScreen() {
     .reverse()
     .map((s) => ({ label: s.date.slice(5).replace('-', '/'), value: s.balance }));
 
-  const submit = () => {
-    // 나눠 적는 계좌는 두 값을 더해 잔액을 만든다. 합계를 따로 받으면 어긋난다.
-    const nextPrincipal = tracksPrincipal ? parseAmount(principalInput) : undefined;
-    const next = tracksPrincipal
-      ? parseAmount(principalInput) + parseAmount(gainInput)
-      : parseAmount(amount);
+  // 기준 날짜까지 자동이체됐을 납입금을 지난 원금에 더한다. 사람이 아는 건
+  // 통장에 찍힌 잔액뿐이고, 그중 얼마가 원금인지는 앱이 굴릴 수 있다.
+  const autoPrincipal =
+    account.principal === undefined
+      ? undefined
+      : account.principal + projectBalance(account, recordedOn, date).deposits;
+  const enteredBalance = parseAmount(amount);
+  const formPrincipal = editPrincipal ? parseAmount(principalInput) : autoPrincipal;
 
-    if (tracksPrincipal ? !principalInput && !gainInput : !amount) {
+  const submit = () => {
+    if (!amount) {
       Alert.alert('금액을 입력해 주세요');
       return;
     }
 
-    setBalance(account.id, next, date, memo.trim() || undefined, nextPrincipal);
+    setBalance(account.id, enteredBalance, date, memo.trim() || undefined, formPrincipal);
     setAmount('');
     setPrincipalInput('');
-    setGainInput('');
+    setEditPrincipal(false);
     setMemo('');
     setDate(today());
     setOpen(false);
@@ -232,23 +236,39 @@ export default function AccountDetailScreen() {
       {open ? (
         <Card style={{ marginTop: spacing.md }}>
           <Text style={styles.formTitle}>잔액 업데이트</Text>
-          {tracksPrincipal ? (
+          <Field
+            label={isLiability ? '남은 원금' : '현재 잔액'}
+            hint={tracksPrincipal ? '통장에 찍힌 금액 그대로 넣으세요.' : undefined}
+          >
+            <AmountInput value={amount} onChangeText={setAmount} />
+          </Field>
+
+          {tracksPrincipal && formPrincipal !== undefined ? (
             <>
-              <Field label="원금" hint="지금까지 내가 넣은 돈">
-                <AmountInput value={principalInput} onChangeText={setPrincipalInput} />
-              </Field>
-              <Field
-                label={gainLabel}
-                hint={`합계 ${won(parseAmount(principalInput) + parseAmount(gainInput))}`}
-              >
-                <AmountInput value={gainInput} onChangeText={setGainInput} />
-              </Field>
+              <View style={styles.autoRow}>
+                <Text style={styles.autoText}>
+                  원금 {won(formPrincipal)} · {gainLabel}{' '}
+                  {enteredBalance - formPrincipal >= 0 ? '+' : '-'}
+                  {won(Math.abs(enteredBalance - formPrincipal))}
+                </Text>
+                <Pressable
+                  hitSlop={8}
+                  onPress={() => {
+                    if (!editPrincipal) setPrincipalInput(String(autoPrincipal ?? ''));
+                    setEditPrincipal((v) => !v);
+                  }}
+                >
+                  <Text style={styles.autoLink}>{editPrincipal ? '자동으로' : '원금 고치기'}</Text>
+                </Pressable>
+              </View>
+
+              {editPrincipal ? (
+                <Field label="원금" hint="자동 계산이 실제와 다르면 여기서 고치세요.">
+                  <AmountInput value={principalInput} onChangeText={setPrincipalInput} />
+                </Field>
+              ) : null}
             </>
-          ) : (
-            <Field label={isLiability ? '남은 원금' : '현재 잔액'}>
-              <AmountInput value={amount} onChangeText={setAmount} />
-            </Field>
-          )}
+          ) : null}
           <Field label="기준 날짜">
             <DateField value={date} onChange={setDate} />
           </Field>
@@ -269,10 +289,7 @@ export default function AccountDetailScreen() {
           onPress={() => {
             // 예상치가 아니라 마지막으로 기록한 값을 채운다. 실제 잔액을 확인해 고치라는 뜻이다.
             setAmount(String(account.balance));
-            if (split) {
-              setPrincipalInput(String(split.principal));
-              setGainInput(String(split.gain));
-            }
+            setEditPrincipal(false);
             setOpen(true);
           }}
           style={{ marginTop: spacing.md }}
@@ -352,6 +369,15 @@ const styles = StyleSheet.create({
   hero: { alignItems: 'center', gap: 6 },
   heroKind: { color: colors.textFaint, fontSize: font.tiny },
   heroValue: { color: colors.text, fontSize: font.h1, fontWeight: '800' },
+  autoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: -spacing.sm,
+    marginBottom: spacing.md,
+  },
+  autoText: { color: colors.textMuted, fontSize: font.small, flex: 1 },
+  autoLink: { color: colors.primary, fontSize: font.small, fontWeight: '700' },
   effectiveHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   effectiveTitle: { color: colors.textMuted, fontSize: font.small },
   effectiveValue: { color: colors.up, fontSize: font.h3, fontWeight: '700' },

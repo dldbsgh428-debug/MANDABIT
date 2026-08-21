@@ -190,7 +190,14 @@ export default function LedgerScreen() {
                       >
                         <Text style={styles.txEmoji}>{cat?.emoji ?? '❓'}</Text>
                         <View style={{ flex: 1 }}>
-                          <Text style={styles.txCategory}>{cat?.name ?? '미분류'}</Text>
+                          <View style={styles.txTitleRow}>
+                            <Text style={styles.txCategory}>{cat?.name ?? '미분류'}</Text>
+                            {tx.auto ? (
+                              <View style={styles.autoBadge}>
+                                <Text style={styles.autoBadgeText}>자동</Text>
+                              </View>
+                            ) : null}
+                          </View>
                           <Text style={styles.txMemo} numberOfLines={1}>
                             {[tx.memo, account?.name].filter(Boolean).join(' · ') || '메모 없음'}
                           </Text>
@@ -282,6 +289,14 @@ const styles = StyleSheet.create({
   },
   txRowBorder: { borderTopWidth: 1, borderTopColor: colors.border },
   txEmoji: { fontSize: 20 },
+  txTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  autoBadge: {
+    backgroundColor: colors.primarySoft,
+    borderRadius: radius.sm,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+  },
+  autoBadgeText: { color: colors.primary, fontSize: font.tiny, fontWeight: '700' },
   txCategory: { color: colors.text, fontSize: font.body, fontWeight: '600' },
   txMemo: { color: colors.textFaint, fontSize: font.tiny, marginTop: 2 },
   txAmount: { fontSize: font.body, fontWeight: '700' },

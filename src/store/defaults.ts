@@ -41,6 +41,7 @@ export function initialData(): AppData {
       startDate: today(),
       showForecastLine: true,
       projectBalances: true,
+      autoRecurring: true,
     },
     accounts: [],
     snapshots: [],

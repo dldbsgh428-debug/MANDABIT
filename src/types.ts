@@ -96,6 +96,8 @@ export interface Transaction {
   /** 어느 계좌에서 나갔는지(선택). 비워두면 현금 흐름만 기록된다. */
   accountId?: string;
   memo?: string;
+  /** 앱이 고정지출을 대신 넣은 기록. 사용자가 직접 넣은 것과 구분해 표시한다. */
+  auto?: boolean;
   createdAt: string;
 }
 
@@ -149,6 +151,14 @@ export interface Settings {
    * 끄면 입력한 잔액만 그대로 쓴다.
    */
   projectBalances: boolean;
+  /**
+   * 결제일이 지난 고정지출을 앱이 알아서 가계부에 넣을지.
+   *
+   * 매달 같은 금액이 나가는 걸 아는데도 사람이 다시 타이핑할 이유가 없다.
+   * 다만 그 달에 같은 카테고리 지출이 이미 있으면 넣지 않는다. 금액이 달라진
+   * 경우(월세 인상 등)에 중복으로 쌓이는 게 더 나쁘기 때문이다.
+   */
+  autoRecurring: boolean;
 }
 
 /** AsyncStorage에 저장되는 전체 상태. */

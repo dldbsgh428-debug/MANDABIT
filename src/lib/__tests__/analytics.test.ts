@@ -25,10 +25,12 @@ import {
   recurringStatus,
   recurringTotal,
   dueDateIn,
+  pendingAutoRecurring,
   requiredMonthlySaving,
 } from '../analytics';
 import type {
   Account,
+  AppData,
   BalanceSnapshot,
   Category,
   RecurringExpense,
@@ -749,6 +751,92 @@ function recurring(over: Partial<RecurringExpense> & { id: string; amount: numbe
     ...over,
   };
 }
+
+describe('pendingAutoRecurring', () => {
+  function data(over: Partial<AppData> = {}): AppData {
+    return {
+      version: 1,
+      settings: {
+        goalAmount: 100_000_000,
+        monthlySavingTarget: 0,
+        startDate: '2026-01-01',
+        showForecastLine: true,
+        projectBalances: true,
+        autoRecurring: true,
+      },
+      accounts: [],
+      snapshots: [],
+      transactions: [],
+      categories: [
+        { id: 'exp-house', name: '주거', type: 'expense', emoji: '🏠' },
+        { id: 'exp-insurance', name: '보험', type: 'expense', emoji: '🛡️' },
+        { id: 'exp-etc', name: '기타', type: 'expense', emoji: '➖' },
+      ],
+      recurring: [],
+      ...over,
+    };
+  }
+
+  it('결제일이 지난 것만 넣는다', () => {
+    const d = data({
+      recurring: [
+        recurring({ id: '월세', amount: 600_000, dayOfMonth: 5, categoryId: 'exp-house' }),
+        recurring({ id: '보험', amount: 90_000, dayOfMonth: 28, categoryId: 'exp-insurance' }),
+      ],
+    });
+
+    // 오늘은 8월 17일. 5일치는 지났고 28일치는 아직이다.
+    const out = pendingAutoRecurring(d, '2026-08-17');
+    expect(out).toHaveLength(1);
+    expect(out[0]).toMatchObject({ amount: 600_000, date: '2026-08-05', auto: true });
+  });
+
+  it('같은 카테고리 지출이 이미 있으면 건너뛴다', () => {
+    // 월세가 올라 직접 65만원을 넣어둔 상황. 예전 금액으로 한 건 더 쌓이면 안 된다.
+    const d = data({
+      recurring: [recurring({ id: '월세', amount: 600_000, dayOfMonth: 5, categoryId: 'exp-house' })],
+      transactions: [
+        tx({ type: 'expense', amount: 650_000, date: '2026-08-05', categoryId: 'exp-house' }),
+      ],
+    });
+
+    expect(pendingAutoRecurring(d, '2026-08-17')).toHaveLength(0);
+  });
+
+  it('카테고리가 없어졌으면 넣지 않는다', () => {
+    // 넣어봐야 '미분류'로 쌓인다.
+    const d = data({
+      categories: [],
+      recurring: [recurring({ id: '월세', amount: 600_000, dayOfMonth: 5, categoryId: 'exp-gone' })],
+    });
+
+    expect(pendingAutoRecurring(d, '2026-08-17')).toHaveLength(0);
+  });
+
+  it('멈춘 항목은 넣지 않는다', () => {
+    const d = data({
+      recurring: [
+        recurring({ id: '헬스', amount: 50_000, dayOfMonth: 1, categoryId: 'exp-etc', active: false }),
+      ],
+    });
+
+    expect(pendingAutoRecurring(d, '2026-08-17')).toHaveLength(0);
+  });
+
+  it('한 번 넣고 나면 다시 넣지 않는다', () => {
+    const d = data({
+      recurring: [recurring({ id: '월세', amount: 600_000, dayOfMonth: 5, categoryId: 'exp-house' })],
+    });
+
+    const first = pendingAutoRecurring(d, '2026-08-17');
+    const after = data({
+      recurring: d.recurring,
+      transactions: first.map((t, i) => ({ ...t, id: `t${i}`, createdAt: '2026-08-17T00:00:00.000Z' })),
+    });
+
+    expect(pendingAutoRecurring(after, '2026-08-17')).toHaveLength(0);
+  });
+});
 
 describe('dueDateIn', () => {
   it('해당 월의 결제일을 만든다', () => {

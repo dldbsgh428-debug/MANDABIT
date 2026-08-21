@@ -135,6 +135,12 @@ export default function SettingsScreen() {
           value={data.settings.projectBalances}
           onChange={(v) => updateSettings({ projectBalances: v })}
         />
+        <ToggleRow
+          label="고정지출 자동 기록"
+          hint="결제일이 지난 고정지출을 앱을 열 때 알아서 가계부에 넣습니다. 그 달에 같은 카테고리 지출이 이미 있으면 넣지 않고 기다립니다."
+          value={data.settings.autoRecurring}
+          onChange={(v) => updateSettings({ autoRecurring: v })}
+        />
       </Card>
 
       <SectionHeader title="분류" />

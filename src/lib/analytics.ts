@@ -751,6 +751,49 @@ export function recurringStatus(
     .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
 }
 
+/**
+ * 결제일이 지났는데 아직 가계부에 없는 고정지출을, 넣을 형태로 돌려준다.
+ *
+ * 그 달에 같은 카테고리 지출이 하나라도 있으면 건너뛴다. 월세가 올랐는데
+ * 예전 금액으로 한 건 더 쌓이는 것이, 안 넣고 기다리는 것보다 나쁘다.
+ * 건너뛴 항목은 고정지출 화면에 '대기'로 남아 직접 확인할 수 있다.
+ */
+export function pendingAutoRecurring(
+  data: AppData,
+  asOf: ISODate = today(),
+): Omit<Transaction, 'id' | 'createdAt'>[] {
+  const month = monthOf(asOf);
+  const out: Omit<Transaction, 'id' | 'createdAt'>[] = [];
+
+  for (const r of data.recurring) {
+    if (!r.active) continue;
+
+    // 카테고리가 없어졌으면 넣지 않는다. 넣어봐야 '미분류'로 쌓일 뿐이다.
+    const category = data.categories.find((c) => c.id === r.categoryId);
+    if (!category || category.archived) continue;
+
+    const due = dueDateIn(month, r.dayOfMonth);
+    if (due > asOf) continue;
+
+    const usedCategory = data.transactions.some(
+      (t) => t.type === 'expense' && monthOf(t.date) === month && t.categoryId === r.categoryId,
+    );
+    if (usedCategory) continue;
+
+    out.push({
+      date: due,
+      type: 'expense',
+      amount: r.amount,
+      categoryId: r.categoryId,
+      accountId: r.accountId,
+      memo: r.name,
+      auto: true,
+    });
+  }
+
+  return out;
+}
+
 /** 해당 월의 결제일. 31일 설정인데 2월이면 말일(28/29일)로 당긴다. */
 export function dueDateIn(month: MonthKey, dayOfMonth: number): ISODate {
   const last = Number(endOfMonth(month).slice(-2));
