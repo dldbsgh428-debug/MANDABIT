@@ -1,7 +1,7 @@
 /** 거래 입력·수정 모달. id 쿼리가 있으면 수정 모드. */
 
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { Text } from '../../src/components/Typo';
 
@@ -9,6 +9,7 @@ import { DateField } from '../../src/components/DateField';
 import { FormScreen } from '../../src/components/FormScreen';
 import { AmountInput, Button, Field, Input, Segmented } from '../../src/components/ui';
 import { today } from '../../src/lib/date';
+import { suggestCategory } from '../../src/lib/classify';
 import { parseAmount } from '../../src/lib/money';
 import { useStore } from '../../src/store/StoreProvider';
 import { colors, font, radius, spacing } from '../../src/theme';
@@ -27,16 +28,29 @@ export default function TransactionEditScreen() {
   const [categoryId, setCategoryId] = useState(existing?.categoryId ?? '');
   const [accountId, setAccountId] = useState(existing?.accountId);
   const [memo, setMemo] = useState(existing?.memo ?? '');
+  // 사용자가 직접 고른 뒤에는 자동 선택이 끼어들지 않는다.
+  const [picked, setPicked] = useState(Boolean(existing));
 
   const categories = useMemo(
     () => data.categories.filter((c) => c.type === type && !c.archived),
     [data.categories, type],
   );
 
+  // 메모를 보고 고른 카테고리. 사람이 직접 고르기 전까지만 따라간다.
+  const suggested = useMemo(
+    () => (picked ? null : suggestCategory(memo, type, data.transactions, data.categories)),
+    [picked, memo, type, data.transactions, data.categories],
+  );
+
+  useEffect(() => {
+    if (suggested) setCategoryId(suggested);
+  }, [suggested]);
+
   // 타입을 바꾸면 이전 타입의 카테고리 선택은 무효가 된다.
   const changeType = (next: TxType) => {
     setType(next);
     setCategoryId('');
+    setPicked(false);
   };
 
   const save = () => {
@@ -100,6 +114,13 @@ export default function TransactionEditScreen() {
         <DateField value={date} onChange={setDate} />
       </Field>
 
+      <Field
+        label="어디에 썼나요 (선택)"
+        hint="가게 이름을 적으면 카테고리를 알아서 골라드려요. 다르면 눌러 고치면 다음부터 그렇게 배웁니다."
+      >
+        <Input value={memo} onChangeText={setMemo} placeholder="예: 스타벅스, 점심 회식" />
+      </Field>
+
       <Field label="카테고리">
         <View style={styles.grid}>
           {categories.map((c) => {
@@ -107,7 +128,10 @@ export default function TransactionEditScreen() {
             return (
               <Pressable
                 key={c.id}
-                onPress={() => setCategoryId(c.id)}
+                onPress={() => {
+                  setCategoryId(c.id);
+                  setPicked(true);
+                }}
                 style={[styles.gridItem, active && styles.gridItemActive]}
               >
                 <Text style={styles.gridEmoji}>{c.emoji}</Text>
@@ -118,6 +142,10 @@ export default function TransactionEditScreen() {
             );
           })}
         </View>
+
+        {suggested && suggested === categoryId ? (
+          <Text style={styles.autoPick}>메모를 보고 골랐어요. 다르면 눌러서 바꾸세요.</Text>
+        ) : null}
       </Field>
 
       {data.accounts.length > 0 ? (
@@ -141,10 +169,6 @@ export default function TransactionEditScreen() {
           </View>
         </Field>
       ) : null}
-
-      <Field label="메모 (선택)">
-        <Input value={memo} onChangeText={setMemo} placeholder="예: 점심 회식" />
-      </Field>
 
       <Button title={existing ? '수정 저장' : '저장'} onPress={save} />
 
@@ -181,6 +205,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
+  autoPick: { color: colors.primary, fontSize: font.tiny, marginTop: spacing.sm },
   gridItemActive: { backgroundColor: colors.primarySoft, borderColor: colors.primary },
   gridEmoji: { fontSize: 20 },
   gridLabel: { color: colors.textMuted, fontSize: font.tiny, paddingHorizontal: 2 },
