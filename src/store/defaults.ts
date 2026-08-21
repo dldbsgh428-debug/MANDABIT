@@ -42,6 +42,11 @@ export function initialData(): AppData {
       showForecastLine: true,
       projectBalances: true,
       autoRecurring: true,
+      // 말일 저녁 8시. 통장을 열어볼 만한 시간이면서, 기록이 그 달 안에
+      // 남아야 그 달의 순자산으로 잡힌다.
+      reminderEnabled: false,
+      reminderDay: 31,
+      reminderHour: 20,
     },
     accounts: [],
     snapshots: [],

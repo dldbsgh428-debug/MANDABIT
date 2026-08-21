@@ -5,6 +5,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { Loading } from '../src/components/ui';
 import { StoreProvider, useStore } from '../src/store/StoreProvider';
+import { useReminderSync } from '../src/store/useReminderSync';
 import { colors, fonts } from '../src/theme';
 
 export default function RootLayout() {
@@ -20,6 +21,8 @@ export default function RootLayout() {
 
 function AppShell() {
   const { ready } = useStore();
+  // 알림 예약은 앱이 떠 있을 때만 고칠 수 있다. 여기서 상태와 맞춰둔다.
+  useReminderSync();
   const [fontsLoaded] = useFonts({
     Pretendard: require('../assets/fonts/Pretendard-Regular.otf'),
     'Pretendard-SemiBold': require('../assets/fonts/Pretendard-SemiBold.otf'),
@@ -60,6 +63,7 @@ function AppShell() {
       <Stack.Screen name="recurring/manage" options={{ title: '고정지출' }} />
       <Stack.Screen name="report" options={{ title: '월간 리포트' }} />
       <Stack.Screen name="search" options={{ title: '검색' }} />
+      <Stack.Screen name="reminder" options={{ presentation: 'modal', title: '알림' }} />
       <Stack.Screen name="goal" options={{ presentation: 'modal', title: '목표 설정' }} />
     </Stack>
   );

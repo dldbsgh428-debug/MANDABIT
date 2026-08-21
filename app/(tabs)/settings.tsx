@@ -16,6 +16,7 @@ import { Card, SectionHeader, ToggleRow } from '../../src/components/ui';
 import { exportBackup, importBackup } from '../../src/lib/backup';
 import { formatDateFull } from '../../src/lib/date';
 import { shortWon } from '../../src/lib/money';
+import { formatHour, formatReminderDay } from '../../src/lib/reminder';
 import { useStore } from '../../src/store/StoreProvider';
 import { colors, font, spacing } from '../../src/theme';
 
@@ -140,6 +141,20 @@ export default function SettingsScreen() {
           hint="결제일이 지난 고정지출을 앱을 열 때 알아서 가계부에 넣습니다. 그 달에 같은 카테고리 지출이 이미 있으면 넣지 않고 기다립니다."
           value={data.settings.autoRecurring}
           onChange={(v) => updateSettings({ autoRecurring: v })}
+        />
+      </Card>
+
+      <SectionHeader title="알림" />
+      <Card style={{ padding: 0 }}>
+        <Row
+          icon="notifications-outline"
+          label="잔액 기록 알림"
+          value={
+            data.settings.reminderEnabled
+              ? `${formatReminderDay(data.settings.reminderDay)} ${formatHour(data.settings.reminderHour)}`
+              : '꺼짐'
+          }
+          onPress={() => router.push('/reminder')}
         />
       </Card>
 
