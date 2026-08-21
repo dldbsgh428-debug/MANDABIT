@@ -29,6 +29,11 @@
 - 월별 수입·지출·저축액과 **저축률** 자동 계산
 - 카테고리별 지출·수입 비중 도넛 + 순위 목록
 
+**내역 검색**
+- 메모·카테고리 이름·계좌 이름·금액으로 지난 내역을 찾기 (가계부 탭 우상단 🔍)
+- 수입/지출, 기간(최근 3개월·1년·올해), 카테고리로 좁히기
+- 찾은 내역의 건수·합계와 **월평균**, 월별 합계를 같이 보여줌
+
 **월 저축 목표 · 예산**
 - 월 저축 목표 달성률
 - 카테고리별 월 예산과 소진율 (80% 주의 / 100% 초과 경고)
@@ -57,7 +62,7 @@
 ### 1. 코드 받아서 준비
 
 ```bash
-git clone -b claude/asset-management-app-4pl2nt https://github.com/dldbsgh428-debug/HABITUS.git
+git clone -b claude/asset-management-app-continue-t1lwnk https://github.com/dldbsgh428-debug/HABITUS.git
 cd HABITUS
 npm install
 ```
@@ -100,7 +105,7 @@ npx expo start --tunnel
 | SDK version | `57.x` |
 | 포트 | `8081` |
 
-하단 탭이 **5개**(대시보드·자산·가계부·예산·설정)면 맞게 열린 것입니다.
+하단 탭이 **4개**(대시보드·자산·가계부·설정)면 맞게 열린 것입니다.
 다른 이름이나 다른 SDK 버전이 보이면 다른 프로젝트가 열린 것이니,
 Expo Go에서 `Go Home`을 누르고 **터미널의 QR을 다시 스캔**하세요.
 Expo Go의 "Recently opened" 목록을 누르면 이전 프로젝트가 다시 열립니다.
@@ -242,11 +247,11 @@ npm run ios       # iOS 시뮬레이터 (macOS 필요)
 
 ```bash
 npm run typecheck   # tsc --noEmit
-npm test            # jest (90개)
+npm test            # jest (151개)
 ```
 
 테스트는 화면이 아니라 계산 로직을 덮습니다. 순자산 복원, 저축률, 달성 예측,
-예산 소진율, 원화 표시, 백업 파일 검증이 대상입니다. 이 계산이 틀리면 사용자가
+예산 소진율, 원화 표시, 내역 검색, 백업 파일 검증이 대상입니다. 이 계산이 틀리면 사용자가
 잘못된 목표 시점을 믿게 되므로 여기를 먼저 지킵니다.
 
 ## 구조
@@ -256,14 +261,15 @@ app/                       expo-router 화면 (파일 경로 = URL)
   (tabs)/
     index.tsx              대시보드
     accounts.tsx           자산·부채 목록
-    ledger.tsx             가계부
-    budget.tsx             예산·월 저축 목표
+    ledger.tsx             가계부 (내역·예산)
     settings.tsx           설정·백업
   account/edit.tsx         계좌 추가·수정 (모달)
   account/[id].tsx         계좌 상세, 잔액 업데이트
   transaction/edit.tsx     거래 입력·수정 (모달)
   category/manage.tsx      카테고리·예산 관리
   recurring/manage.tsx     고정지출 관리
+  report.tsx               월간 리포트
+  search.tsx               가계부 검색
   goal.tsx                 목표 설정 (모달)
 
 src/
@@ -271,6 +277,9 @@ src/
   theme.ts                 색·간격·폰트 토큰
   lib/
     analytics.ts           순자산·저축률·달성 예측 계산 (순수 함수)
+    report.ts              월간 리포트 집계
+    search.ts              내역 검색·기간 합계 (순수 함수)
+    classify.ts            메모를 보고 카테고리 추천
     money.ts               원화 포맷 (억/만 단위)
     date.ts                'YYYY-MM-DD' 기반 날짜 유틸
     backup.ts              JSON 백업 내보내기/복원
@@ -281,7 +290,10 @@ src/
   components/
     ui.tsx                 카드·버튼·입력 등 공통 컴포넌트
     charts.tsx             react-native-svg로 직접 그린 4종 차트
+    TransactionRow.tsx     가계부·검색이 함께 쓰는 내역 한 줄
+    BudgetPanel.tsx        카테고리별 예산 소진율
     DateField.tsx          날짜 선택 필드
+    Typo.tsx               글씨체를 끼워 넣는 Text/TextInput
 ```
 
 ## 설계 노트
@@ -303,6 +315,11 @@ src/
 **계좌를 삭제해도 가계부 내역은 남습니다.** 계좌 연결만 끊습니다.
 카테고리도 이미 쓰인 것은 삭제 대신 숨김 처리합니다 — 실제로 지우면 과거 거래가
 '미분류'로 변해 지난 달 통계가 망가지기 때문입니다.
+
+**검색은 목록보다 합계를 먼저 보여줍니다.** 지난 내역을 뒤지는 이유는 보통
+"그게 언제였지"가 아니라 "거기에 얼마 썼지"입니다. 그래서 걸러낸 결과의
+건수·합계·월평균을 목록 위에 두고, 여러 달에 걸친 결과면 월별 합계도 같이
+냅니다. 한 달만 나온 결과에는 같은 숫자가 두 번 나오므로 월별은 접습니다.
 
 **차트는 라이브러리 없이 `react-native-svg`로 직접 그렸습니다.** 필요한 모양이
 네 가지(링·라인·바·도넛)뿐이고, 직접 그리면 앱 테마 색과 원화 단위 축 라벨을

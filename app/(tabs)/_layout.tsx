@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Tabs } from 'expo-router';
-import type { ColorValue } from 'react-native';
+import { Tabs, useRouter } from 'expo-router';
+import { Pressable, type ColorValue } from 'react-native';
 
-import { colors, fonts } from '../../src/theme';
+import { colors, fonts, spacing } from '../../src/theme';
 
 /** 탭 아이콘. 활성/비활성 색은 Tabs가 넘겨준다. */
 function icon(name: keyof typeof Ionicons.glyphMap) {
@@ -12,6 +12,8 @@ function icon(name: keyof typeof Ionicons.glyphMap) {
 }
 
 export default function TabsLayout() {
+  const router = useRouter();
+
   return (
     <Tabs
       screenOptions={{
@@ -39,7 +41,20 @@ export default function TabsLayout() {
       />
       <Tabs.Screen
         name="ledger"
-        options={{ title: '가계부', tabBarIcon: icon('receipt-outline') }}
+        options={{
+          title: '가계부',
+          tabBarIcon: icon('receipt-outline'),
+          // 검색은 가계부에서만 쓸모가 있어서 이 탭의 헤더에만 둔다.
+          headerRight: () => (
+            <Pressable
+              hitSlop={10}
+              onPress={() => router.push('/search')}
+              style={({ pressed }) => [{ marginRight: spacing.lg }, pressed && { opacity: 0.6 }]}
+            >
+              <Ionicons name="search" size={22} color={colors.text} />
+            </Pressable>
+          ),
+        }}
       />
       <Tabs.Screen
         name="settings"

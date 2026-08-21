@@ -22,6 +22,7 @@ import {
 import { Text } from '../../src/components/Typo';
 
 import { BudgetPanel } from '../../src/components/BudgetPanel';
+import { TransactionRow } from '../../src/components/TransactionRow';
 import { Card, EmptyState, Segmented } from '../../src/components/ui';
 import { monthlyCashflow } from '../../src/lib/analytics';
 import {
@@ -173,42 +174,15 @@ export default function LedgerScreen() {
               <View key={group.date} style={{ marginBottom: spacing.md }}>
                 <Text style={styles.dateLabel}>{formatDate(group.date)}</Text>
                 <Card style={{ padding: 0 }}>
-                  {group.items.map((tx, i) => {
-                    const cat = data.categories.find((c) => c.id === tx.categoryId);
-                    const account = data.accounts.find((a) => a.id === tx.accountId);
-                    const income = tx.type === 'income';
-                    return (
-                      <Pressable
-                        key={tx.id}
-                        onPress={() => router.push(`/transaction/edit?id=${tx.id}`)}
-                        onLongPress={() => confirmDelete(tx)}
-                        style={({ pressed }) => [
-                          styles.txRow,
-                          i > 0 && styles.txRowBorder,
-                          pressed && { backgroundColor: colors.surfaceAlt },
-                        ]}
-                      >
-                        <Text style={styles.txEmoji}>{cat?.emoji ?? '❓'}</Text>
-                        <View style={{ flex: 1 }}>
-                          <View style={styles.txTitleRow}>
-                            <Text style={styles.txCategory}>{cat?.name ?? '미분류'}</Text>
-                            {tx.auto ? (
-                              <View style={styles.autoBadge}>
-                                <Text style={styles.autoBadgeText}>자동</Text>
-                              </View>
-                            ) : null}
-                          </View>
-                          <Text style={styles.txMemo} numberOfLines={1}>
-                            {[tx.memo, account?.name].filter(Boolean).join(' · ') || '메모 없음'}
-                          </Text>
-                        </View>
-                        <Text style={[styles.txAmount, { color: income ? colors.up : colors.text }]}>
-                          {income ? '+' : '-'}
-                          {won(tx.amount)}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
+                  {group.items.map((tx, i) => (
+                    <TransactionRow
+                      key={tx.id}
+                      tx={tx}
+                      divider={i > 0}
+                      onPress={() => router.push(`/transaction/edit?id=${tx.id}`)}
+                      onLongPress={() => confirmDelete(tx)}
+                    />
+                  ))}
                 </Card>
               </View>
             ))}
@@ -253,11 +227,6 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
 
-  breakdownList: { marginTop: spacing.lg, gap: spacing.sm },
-  breakdownRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  breakdownName: { color: colors.textMuted, fontSize: font.small, flex: 1 },
-  breakdownAmount: { color: colors.text, fontSize: font.small, fontWeight: '600' },
-
   reportLink: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -280,28 +249,6 @@ const styles = StyleSheet.create({
   },
   dateLabel: { color: colors.textFaint, fontSize: font.tiny, marginBottom: 6, marginLeft: 2 },
 
-  txRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  txRowBorder: { borderTopWidth: 1, borderTopColor: colors.border },
-  txEmoji: { fontSize: 20 },
-  txTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  autoBadge: {
-    backgroundColor: colors.primarySoft,
-    borderRadius: radius.sm,
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-  },
-  autoBadgeText: { color: colors.primary, fontSize: font.tiny, fontWeight: '700' },
-  txCategory: { color: colors.text, fontSize: font.body, fontWeight: '600' },
-  txMemo: { color: colors.textFaint, fontSize: font.tiny, marginTop: 2 },
-  txAmount: { fontSize: font.body, fontWeight: '700' },
-
-  placeholder: { color: colors.textMuted, fontSize: font.small },
   hint: { color: colors.textFaint, fontSize: font.tiny, textAlign: 'center', marginTop: spacing.sm },
 
   fab: {
