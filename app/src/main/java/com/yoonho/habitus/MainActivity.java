@@ -54,7 +54,7 @@ import java.util.List;
 import java.util.Locale;
 
 public final class MainActivity extends Activity {
-    private static final String[] NAV_LABELS = {"오늘", "일정", "루틴", "성장", "내정보"};
+    private static final String[] NAV_LABELS = {"홈", "일정", "루틴", "성장", "내정보"};
     private final DateTimeFormatter koreanDate = DateTimeFormatter.ofPattern("M월 d일 EEEE", Locale.KOREAN);
     private final DateTimeFormatter shortDate = DateTimeFormatter.ofPattern("M월 d일", Locale.KOREAN);
 
@@ -198,7 +198,7 @@ public final class MainActivity extends Activity {
                 today.format(koreanDate));
 
         LinearLayout balanceCard = UiKit.card(this);
-        TextView balanceTitle = UiKit.title(this, "이번 주 아비투스 균형", 17);
+        TextView balanceTitle = UiKit.title(this, "이번 주 자본 균형", 17);
         balanceCard.addView(balanceTitle);
         TextView balanceCaption = UiKit.text(this,
                 "많이 하는 것보다, 나에게 필요한 자본을 꾸준히 채워보세요.", 13, UiKit.MUTED);
@@ -804,7 +804,7 @@ public final class MainActivity extends Activity {
             String backup = repository.exportBackup();
             Intent share = new Intent(Intent.ACTION_SEND);
             share.setType("application/json");
-            share.putExtra(Intent.EXTRA_SUBJECT, "아비투스 스케줄러 백업");
+            share.putExtra(Intent.EXTRA_SUBJECT, "MANDABIT 백업");
             share.putExtra(Intent.EXTRA_TEXT, backup);
             startActivity(Intent.createChooser(share, "백업 보관하기"));
         } catch (JSONException exception) {
