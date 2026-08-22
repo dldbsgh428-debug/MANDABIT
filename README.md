@@ -1,8 +1,8 @@
-# 아비투스 스케줄러
+# MANDABIT
 
 [![Android APK Build](https://github.com/dldbsgh428-debug/HABITUS/actions/workflows/android-build.yml/badge.svg)](https://github.com/dldbsgh428-debug/HABITUS/actions/workflows/android-build.yml)
 
-일정을 완료할수록 삶의 7가지 자본이 어떻게 성장하는지 보여주는 개인용 안드로이드 앱입니다.
+목표를 설계하고, 습관으로 완성하다. 만다라트와 삶의 7가지 자본을 실천으로 연결하는 성장 플래너입니다.
 
 ## 첫 버전에 포함된 기능
 
@@ -35,7 +35,7 @@
 APK는 `app/build/outputs/apk/debug/app-debug.apk`에 생성됩니다.
 
 GitHub에 푸시하면 `Android APK Build` 작업이 자동으로 실행됩니다. 완료된 작업의
-`Artifacts`에서 `habitus-scheduler-apk-실행번호` 파일을 내려받아 설치할 수 있습니다.
+`Artifacts`에서 `mandabit-apk-실행번호` 파일을 내려받아 설치할 수 있습니다.
 자동 빌드의 테스트 서명키는 Actions 캐시에만 보관하며 저장소에는 커밋하지 않습니다.
 
 ## 다음 단계 후보
