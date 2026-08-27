@@ -1,48 +1,32 @@
 # MANDABIT
 
-[![Android APK Build](https://github.com/dldbsgh428-debug/HABITUS/actions/workflows/android-build.yml/badge.svg)](https://github.com/dldbsgh428-debug/HABITUS/actions/workflows/android-build.yml)
+목표를 설계하고, 습관으로 완성하다.
 
-목표를 설계하고, 습관으로 완성하다. 만다라트와 삶의 7가지 자본을 실천으로 연결하는 성장 플래너입니다.
+MANDABIT Android 0.2는 최신 웹 화면을 그대로 보여 주는 WebView 앱입니다. 웹앱의 일정·반복 루틴 알림을 Android 네이티브 알람에 연결해 앱을 닫아도 설정한 시간에 알림을 받을 수 있습니다.
 
-## 첫 버전에 포함된 기능
+## Android 기능
 
-- 오늘 일정 확인, 완료 체크, 직접 추가 및 삭제
-- 일정마다 주 자본 1개와 보조 자본 최대 2개 연결
-- 매일·평일·주말 루틴 등록과 완료 기록
-- 최근 7일 기록을 바탕으로 부족한 자본의 실천 일정 2~3개 추천
-- 추천을 자동으로 넣지 않고 사용자가 선택한 뒤 날짜와 시간 확정
-- 주간·월간 자본별 성장 시간, 달성률, 균형 점수와 성장 해석
-- 이름, 하루 성장 가능 시간, 추천 개수 설정
-- JSON 백업 내보내기 및 붙여넣기 복원
-- 로그인 없이 기기에만 기록 저장
+- 최신 MANDABIT 화면 자동 반영
+- 일정 및 반복 루틴별 알림
+- 평일·주말 분리 시간과 요일 선택 지원
+- 앱 종료 상태에서도 시스템 알림
+- 휴대폰 재부팅·시간대 변경 후 알람 자동 복원
+- Android 알림 권한과 정확한 알람 권한 안내
+- 주황색 MANDABIT 앱 아이콘
 
-문화 자본은 클래식에 한정하지 않고 독서, 미술, 음악, 영화, 역사, 여행, 언어와 음식문화를 포함합니다.
+## APK 빌드
 
-## 데이터 구조
+main 브랜치에 변경이 올라오면 GitHub Actions가 자동으로 lint와 debug APK 빌드를 실행합니다.
 
-`HabitusRepository`를 저장 경계로 두었습니다. 현재는 `LocalHabitusRepository`가 기기 내부에 저장하며,
-나중에 로그인과 동기화를 추가할 때 서버 저장 구현으로 교체하거나 함께 사용할 수 있습니다.
-로컬 프로필도 안정적인 사용자 ID를 가지므로 공개 앱으로 확장할 때 기존 기록을 계정에 연결할 수 있습니다.
+[GitHub Actions에서 최신 APK 받기](https://github.com/dldbsgh428-debug/MANDABIT/actions/workflows/android-build.yml)
 
-## 빌드
+완료된 최신 실행의 Artifacts에서 \`mandabit-latest-apk\`를 내려받으면 \`MANDABIT-latest.apk\`가 들어 있습니다.
 
-필요 환경: JDK 17, Android SDK 35, Gradle 8.9
+## 알림 사용
 
-```bash
-./gradlew assembleDebug
-```
+1. 일정 또는 반복 루틴에서 알림을 켭니다.
+2. 처음 한 번 Android 알림 권한을 허용합니다.
+3. 정확한 시간 알림 화면이 열리면 MANDABIT을 허용합니다.
+4. 기기 절전 설정이 강한 경우 MANDABIT의 배터리 사용을 제한 없음으로 설정하면 더 안정적입니다.
 
-APK는 `app/build/outputs/apk/debug/app-debug.apk`에 생성됩니다.
-
-GitHub에 푸시하면 `Android APK Build` 작업이 자동으로 실행됩니다. 완료된 작업의
-`Artifacts`에서 `mandabit-apk-실행번호` 파일을 내려받아 설치할 수 있습니다.
-자동 빌드의 테스트 서명키는 Actions 캐시에만 보관하며 저장소에는 커밋하지 않습니다.
-
-## 다음 단계 후보
-
-- 캘린더 주·월 보기와 일정 수정
-- 루틴별 요일 직접 선택 및 연속 달성 기록
-- 알림과 위젯
-- 추천 만족도 학습 및 AI 추천 엔진 연결
-- 선택형 암호화 동기화와 계정 로그인
-- 접근성 점검과 플레이스토어 출시 준비
+웹 주소: https://habitus-scheduler.dldbsgh428.chatgpt.site
