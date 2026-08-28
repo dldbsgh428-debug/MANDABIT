@@ -1,4 +1,4 @@
-package com.yoonho.habitus;
+package com.yoonho.mandabit;
 
 import android.app.Notification;
 import android.app.NotificationChannel;

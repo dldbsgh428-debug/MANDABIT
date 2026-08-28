@@ -1,8 +1,8 @@
-package com.yoonho.habitus.domain;
+package com.yoonho.mandabit.domain;
 
-import com.yoonho.habitus.model.Capital;
-import com.yoonho.habitus.model.Routine;
-import com.yoonho.habitus.model.ScheduleItem;
+import com.yoonho.mandabit.model.Capital;
+import com.yoonho.mandabit.model.Routine;
+import com.yoonho.mandabit.model.ScheduleItem;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;

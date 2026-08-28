@@ -3,15 +3,15 @@ plugins {
 }
 
 android {
-    namespace 'com.yoonho.habitus'
+    namespace 'com.yoonho.mandabit'
     compileSdk 35
 
     defaultConfig {
-        applicationId 'com.yoonho.habitus'
+        applicationId 'com.yoonho.mandabit'
         minSdk 26
         targetSdk 35
-        versionCode 3
-        versionName '0.3.0'
+        versionCode 4
+        versionName '0.4.0'
     }
 
     buildFeatures {

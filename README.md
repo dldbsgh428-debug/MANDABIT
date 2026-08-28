@@ -2,7 +2,7 @@
 
 목표를 설계하고, 습관으로 완성하다.
 
-MANDABIT Android 0.3은 최신 웹 화면을 그대로 보여 주는 WebView 앱입니다. 같은 ChatGPT 계정으로 접속한 PC·모바일·APK의 기록을 자동으로 동기화하고, Android 네이티브 알람으로 앱을 닫아도 설정한 시간에 알려줍니다.
+MANDABIT Android 0.4는 최신 웹 화면을 그대로 보여 주는 WebView 앱입니다. 같은 Google 계정으로 접속한 PC·모바일·APK의 기록을 자동으로 동기화하고, Android 네이티브 알람으로 앱을 닫아도 설정한 시간에 알려줍니다.
 
 ## Android 기능
 
@@ -26,9 +26,9 @@ main 브랜치에 변경이 올라오면 GitHub Actions가 자동으로 lint와 
 
 ## 처음 사용
 
-1. PC·모바일·APK에서 같은 ChatGPT 계정으로 접속합니다.
+1. PC·모바일·APK에서 같은 Google 계정으로 접속합니다.
 2. 내정보의 기기 동기화 상태가 \`기기 동기화됨\`인지 확인합니다.
 3. 일정 또는 반복 루틴에서 알림을 켭니다.
 4. Android 알림 권한과 정확한 알람 권한을 허용합니다.
 
-웹 주소: https://habitus-scheduler.dldbsgh428.chatgpt.site
+웹 주소: https://mandabit.dldbsgh428.chatgpt.site

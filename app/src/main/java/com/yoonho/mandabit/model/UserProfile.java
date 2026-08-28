@@ -1,4 +1,4 @@
-package com.yoonho.habitus.model;
+package com.yoonho.mandabit.model;
 
 import org.json.JSONException;
 import org.json.JSONObject;

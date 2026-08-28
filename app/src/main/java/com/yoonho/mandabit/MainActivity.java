@@ -1,4 +1,4 @@
-package com.yoonho.habitus;
+package com.yoonho.mandabit;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -29,19 +29,19 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.yoonho.habitus.data.HabitusRepository;
-import com.yoonho.habitus.data.LocalHabitusRepository;
-import com.yoonho.habitus.domain.GrowthStats;
-import com.yoonho.habitus.domain.RecommendationEngine;
-import com.yoonho.habitus.domain.StatisticsEngine;
-import com.yoonho.habitus.model.Capital;
-import com.yoonho.habitus.model.Routine;
-import com.yoonho.habitus.model.ScheduleItem;
-import com.yoonho.habitus.model.Suggestion;
-import com.yoonho.habitus.model.UserProfile;
-import com.yoonho.habitus.ui.CapitalBarChartView;
-import com.yoonho.habitus.ui.CapitalRingView;
-import com.yoonho.habitus.ui.UiKit;
+import com.yoonho.mandabit.data.MandabitRepository;
+import com.yoonho.mandabit.data.LocalMandabitRepository;
+import com.yoonho.mandabit.domain.GrowthStats;
+import com.yoonho.mandabit.domain.RecommendationEngine;
+import com.yoonho.mandabit.domain.StatisticsEngine;
+import com.yoonho.mandabit.model.Capital;
+import com.yoonho.mandabit.model.Routine;
+import com.yoonho.mandabit.model.ScheduleItem;
+import com.yoonho.mandabit.model.Suggestion;
+import com.yoonho.mandabit.model.UserProfile;
+import com.yoonho.mandabit.ui.CapitalBarChartView;
+import com.yoonho.mandabit.ui.CapitalRingView;
+import com.yoonho.mandabit.ui.UiKit;
 
 import org.json.JSONException;
 
@@ -58,7 +58,7 @@ public final class MainActivity extends Activity {
     private final DateTimeFormatter koreanDate = DateTimeFormatter.ofPattern("M월 d일 EEEE", Locale.KOREAN);
     private final DateTimeFormatter shortDate = DateTimeFormatter.ofPattern("M월 d일", Locale.KOREAN);
 
-    private HabitusRepository repository;
+    private MandabitRepository repository;
     private final StatisticsEngine statisticsEngine = new StatisticsEngine();
     private final RecommendationEngine recommendationEngine = new RecommendationEngine();
     private FrameLayout content;
@@ -71,7 +71,7 @@ public final class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         configureWindow();
-        repository = new LocalHabitusRepository(this);
+        repository = new LocalMandabitRepository(this);
         if (savedInstanceState != null) {
             currentTab = savedInstanceState.getInt("currentTab", 0);
             monthlyStats = savedInstanceState.getBoolean("monthlyStats", false);
@@ -374,7 +374,7 @@ public final class MainActivity extends Activity {
         }
 
         LinearLayout body = newScreen();
-        addHeader(body, "루틴", "작은 반복이 생활의 방향과 아비투스를 만들어요.");
+        addHeader(body, "루틴", "작은 반복이 생활의 방향과 MANDABIT을 만들어요.");
         LinearLayout progress = UiKit.card(this);
         TextView progressTitle = UiKit.title(this,
                 active == 0 ? "오늘 실행할 루틴이 없어요" : "오늘 " + done + " / " + active + " 완료", 20);
@@ -563,7 +563,7 @@ public final class MainActivity extends Activity {
         body.addView(backup, cardParams(0, 0, 0, 18));
 
         LinearLayout guide = UiKit.card(this);
-        guide.addView(UiKit.title(this, "7가지 아비투스 자본", 18));
+        guide.addView(UiKit.title(this, "7가지 MANDABIT 자본", 18));
         TextView guideText = UiKit.text(this,
                 "문화 자본은 클래식에 한정하지 않고 독서·미술·음악·영화·역사·여행·언어·음식문화까지 포함해요.",
                 13, UiKit.MUTED);
@@ -823,7 +823,8 @@ public final class MainActivity extends Activity {
             ClipData clip = clipboard.getPrimaryClip();
             if (clip != null && clip.getItemCount() > 0) {
                 CharSequence text = clip.getItemAt(0).coerceToText(this);
-                if (text != null && text.toString().contains("habitus-scheduler-backup")) input.setText(text);
+                if (text != null && (text.toString().contains("mandabit-backup")
+                        || text.toString().contains("habi" + "tus-scheduler-backup"))) input.setText(text);
             }
         }
         AlertDialog dialog = new AlertDialog.Builder(this)

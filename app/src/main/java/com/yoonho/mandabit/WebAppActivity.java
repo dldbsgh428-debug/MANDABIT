@@ -1,4 +1,4 @@
-package com.yoonho.habitus;
+package com.yoonho.mandabit;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
@@ -21,7 +21,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
 public class WebAppActivity extends Activity {
-    private static final String SITE_URL = "https://habitus-scheduler.dldbsgh428.chatgpt.site";
+    private static final String SITE_URL = "https://mandabit.dldbsgh428.chatgpt.site";
     private static final int NOTIFICATION_PERMISSION_REQUEST = 3201;
     private static final int FILE_CHOOSER_REQUEST = 4201;
 
@@ -55,7 +55,7 @@ public class WebAppActivity extends Activity {
         settings.setAllowFileAccess(false);
         settings.setAllowContentAccess(true);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
-        settings.setUserAgentString(settings.getUserAgentString() + " MANDABIT-ANDROID/0.3");
+        settings.setUserAgentString(settings.getUserAgentString() + " MANDABIT-ANDROID/0.4");
 
         android.webkit.CookieManager cookieManager = android.webkit.CookieManager.getInstance();
         cookieManager.setAcceptCookie(true);

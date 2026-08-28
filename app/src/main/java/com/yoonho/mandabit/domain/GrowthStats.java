@@ -1,6 +1,6 @@
-package com.yoonho.habitus.domain;
+package com.yoonho.mandabit.domain;
 
-import com.yoonho.habitus.model.Capital;
+import com.yoonho.mandabit.model.Capital;
 
 import java.time.LocalDate;
 import java.util.EnumMap;

@@ -1,4 +1,4 @@
-package com.yoonho.habitus.model;
+package com.yoonho.mandabit.model;
 
 public final class Suggestion {
     public final String title;

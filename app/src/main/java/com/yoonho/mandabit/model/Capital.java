@@ -1,8 +1,8 @@
-package com.yoonho.habitus.model;
+package com.yoonho.mandabit.model;
 
 import java.util.Locale;
 
-/** The seven forms of capital used by Habitus Scheduler. */
+/** The seven forms of capital used by Mandabit Scheduler. */
 public enum Capital {
     PSYCHOLOGICAL("심리", "회복력·자기신뢰·마음의 안정", 0xFF7C6AE8),
     CULTURAL("문화", "독서·예술·영화·역사·여행·음식문화", 0xFFE18B52),

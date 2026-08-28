@@ -1,4 +1,4 @@
-package com.yoonho.habitus.ui;
+package com.yoonho.mandabit.ui;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -7,8 +7,8 @@ import android.graphics.Paint;
 import android.graphics.RectF;
 import android.view.View;
 
-import com.yoonho.habitus.domain.GrowthStats;
-import com.yoonho.habitus.model.Capital;
+import com.yoonho.mandabit.domain.GrowthStats;
+import com.yoonho.mandabit.model.Capital;
 
 public final class CapitalRingView extends View {
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);

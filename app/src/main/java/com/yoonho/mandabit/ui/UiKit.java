@@ -1,4 +1,4 @@
-package com.yoonho.habitus.ui;
+package com.yoonho.mandabit.ui;
 
 import android.content.Context;
 import android.graphics.Color;

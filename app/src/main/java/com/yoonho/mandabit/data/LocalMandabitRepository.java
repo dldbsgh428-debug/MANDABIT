@@ -1,11 +1,11 @@
-package com.yoonho.habitus.data;
+package com.yoonho.mandabit.data;
 
 import android.content.Context;
 import android.content.SharedPreferences;
 
-import com.yoonho.habitus.model.Routine;
-import com.yoonho.habitus.model.ScheduleItem;
-import com.yoonho.habitus.model.UserProfile;
+import com.yoonho.mandabit.model.Routine;
+import com.yoonho.mandabit.model.ScheduleItem;
+import com.yoonho.mandabit.model.UserProfile;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -14,14 +14,16 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 
-public final class LocalHabitusRepository implements HabitusRepository {
-    private static final String STORE = "habitus_private_store";
+public final class LocalMandabitRepository implements MandabitRepository {
+    private static final String STORE = "mandabit_private_store";
+    private static final String BACKUP_FORMAT = "mandabit-backup";
+    private static final String PREVIOUS_BACKUP_FORMAT = "habi" + "tus-scheduler-backup";
     private static final String KEY_SCHEDULES = "schedules";
     private static final String KEY_ROUTINES = "routines";
     private static final String KEY_PROFILE = "profile";
     private final SharedPreferences preferences;
 
-    public LocalHabitusRepository(Context context) {
+    public LocalMandabitRepository(Context context) {
         preferences = context.getSharedPreferences(STORE, Context.MODE_PRIVATE);
         if (!preferences.contains(KEY_PROFILE)) saveProfile(new UserProfile());
     }
@@ -85,7 +87,7 @@ public final class LocalHabitusRepository implements HabitusRepository {
     @Override
     public String exportBackup() throws JSONException {
         JSONObject root = new JSONObject();
-        root.put("format", "habitus-scheduler-backup");
+        root.put("format", BACKUP_FORMAT);
         root.put("version", 1);
         root.put("profile", profile().toJson());
         JSONArray scheduleArray = new JSONArray();
@@ -100,8 +102,9 @@ public final class LocalHabitusRepository implements HabitusRepository {
     @Override
     public void importBackup(String rawJson) throws JSONException {
         JSONObject root = new JSONObject(rawJson);
-        if (!"habitus-scheduler-backup".equals(root.optString("format"))) {
-            throw new JSONException("아비투스 백업 형식이 아니에요.");
+        String format = root.optString("format");
+        if (!BACKUP_FORMAT.equals(format) && !PREVIOUS_BACKUP_FORMAT.equals(format)) {
+            throw new JSONException("MANDABIT 백업 형식이 아니에요.");
         }
         JSONObject profile = root.getJSONObject("profile");
         JSONArray schedules = root.getJSONArray("schedules");

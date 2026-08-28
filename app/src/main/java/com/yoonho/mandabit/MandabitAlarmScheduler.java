@@ -1,4 +1,4 @@
-package com.yoonho.habitus;
+package com.yoonho.mandabit;
 
 import android.app.AlarmManager;
 import android.app.PendingIntent;

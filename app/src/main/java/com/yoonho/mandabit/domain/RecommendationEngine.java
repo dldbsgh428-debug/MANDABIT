@@ -1,10 +1,10 @@
-package com.yoonho.habitus.domain;
+package com.yoonho.mandabit.domain;
 
-import com.yoonho.habitus.model.Capital;
-import com.yoonho.habitus.model.Routine;
-import com.yoonho.habitus.model.ScheduleItem;
-import com.yoonho.habitus.model.Suggestion;
-import com.yoonho.habitus.model.UserProfile;
+import com.yoonho.mandabit.model.Capital;
+import com.yoonho.mandabit.model.Routine;
+import com.yoonho.mandabit.model.ScheduleItem;
+import com.yoonho.mandabit.model.Suggestion;
+import com.yoonho.mandabit.model.UserProfile;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
