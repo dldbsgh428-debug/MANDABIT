@@ -26,15 +26,29 @@ jobs:
         with:
           gradle-version: "8.9"
 
-      - name: Build and verify debug APK
-        run: gradle --no-daemon clean lintDebug assembleDebug
+      - name: Build and verify APKs
+        run: gradle --no-daemon clean lintDebug assembleDebug assembleRelease
 
       - name: Name latest APK
         run: cp app/build/outputs/apk/debug/app-debug.apk MANDABIT-latest.apk
+
+      - name: Bundle unsigned release and signer
+        run: |
+          cp app/build/outputs/apk/release/app-release-unsigned.apk MANDABIT-unsigned.apk
+          cp "$ANDROID_HOME/build-tools/35.0.0/lib/apksigner.jar" apksigner.jar
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: mandabit-latest-apk
           path: MANDABIT-latest.apk
+          if-no-files-found: error
+
+      - name: Upload signing bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: mandabit-signing-bundle
+          path: |
+            MANDABIT-unsigned.apk
+            apksigner.jar
           if-no-files-found: error

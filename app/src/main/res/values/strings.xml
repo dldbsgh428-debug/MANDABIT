@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">MANDABIT</string>
+    <string name="default_web_client_id" translatable="false">140879868668-l2bq2tiujd2o610dq1j8ekbnm50c3st1.apps.googleusercontent.com</string>
 </resources>

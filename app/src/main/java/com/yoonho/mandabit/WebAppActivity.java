@@ -20,6 +20,25 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
+import androidx.annotation.NonNull;
+import androidx.credentials.ClearCredentialStateRequest;
+import androidx.credentials.Credential;
+import androidx.credentials.CredentialManager;
+import androidx.credentials.CredentialManagerCallback;
+import androidx.credentials.CustomCredential;
+import androidx.credentials.GetCredentialRequest;
+import androidx.credentials.GetCredentialResponse;
+import androidx.credentials.exceptions.ClearCredentialException;
+import androidx.credentials.exceptions.GetCredentialCancellationException;
+import androidx.credentials.exceptions.GetCredentialException;
+
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption;
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential;
+
+import org.json.JSONObject;
+
+import java.util.concurrent.Executor;
+
 public class WebAppActivity extends Activity {
     private static final String SITE_URL = "https://mandabit.dldbsgh428.chatgpt.site";
     private static final int NOTIFICATION_PERMISSION_REQUEST = 3201;
@@ -27,6 +46,8 @@ public class WebAppActivity extends Activity {
 
     private WebView webView;
     private ValueCallback<Uri[]> filePathCallback;
+    private CredentialManager credentialManager;
+    private boolean googleSignInRunning;
 
     @SuppressLint({"SetJavaScriptEnabled", "AddJavascriptInterface"})
     @Override
@@ -46,6 +67,7 @@ public class WebAppActivity extends Activity {
                 ViewGroup.LayoutParams.MATCH_PARENT
         ));
         setContentView(webView);
+        credentialManager = CredentialManager.create(this);
 
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
@@ -55,7 +77,7 @@ public class WebAppActivity extends Activity {
         settings.setAllowFileAccess(false);
         settings.setAllowContentAccess(true);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
-        settings.setUserAgentString(settings.getUserAgentString() + " MANDABIT-ANDROID/0.4.1");
+        settings.setUserAgentString(settings.getUserAgentString() + " MANDABIT-ANDROID/0.5.0");
 
         android.webkit.CookieManager cookieManager = android.webkit.CookieManager.getInstance();
         cookieManager.setAcceptCookie(true);
@@ -209,6 +231,90 @@ public class WebAppActivity extends Activity {
         }
     }
 
+    private void startGoogleSignIn() {
+        if (googleSignInRunning) {
+            return;
+        }
+        googleSignInRunning = true;
+
+        GetGoogleIdOption googleIdOption = new GetGoogleIdOption.Builder()
+                .setFilterByAuthorizedAccounts(false)
+                .setServerClientId(getString(R.string.default_web_client_id))
+                .setAutoSelectEnabled(false)
+                .build();
+        GetCredentialRequest request = new GetCredentialRequest.Builder()
+                .addCredentialOption(googleIdOption)
+                .build();
+        Executor mainExecutor = getMainExecutor();
+
+        credentialManager.getCredentialAsync(
+                this,
+                request,
+                new android.os.CancellationSignal(),
+                mainExecutor,
+                new CredentialManagerCallback<GetCredentialResponse, GetCredentialException>() {
+                    @Override
+                    public void onResult(GetCredentialResponse result) {
+                        googleSignInRunning = false;
+                        handleGoogleCredential(result.getCredential());
+                    }
+
+                    @Override
+                    public void onError(@NonNull GetCredentialException error) {
+                        googleSignInRunning = false;
+                        if (error instanceof GetCredentialCancellationException) {
+                            return;
+                        }
+                        sendNativeAuthResult(null, "Google 계정을 불러오지 못했어요. Firebase의 Android 앱 설정을 확인해주세요.");
+                    }
+                }
+        );
+    }
+
+    private void handleGoogleCredential(Credential credential) {
+        if (!(credential instanceof CustomCredential)
+                || !GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL.equals(credential.getType())) {
+            sendNativeAuthResult(null, "선택한 계정의 Google 로그인 정보를 확인하지 못했어요.");
+            return;
+        }
+        try {
+            GoogleIdTokenCredential googleCredential = GoogleIdTokenCredential.createFrom(
+                    ((CustomCredential) credential).getData()
+            );
+            sendNativeAuthResult(googleCredential.getIdToken(), null);
+        } catch (Exception error) {
+            sendNativeAuthResult(null, "Google 로그인 정보를 읽지 못했어요. 다시 시도해주세요.");
+        }
+    }
+
+    private void sendNativeAuthResult(String idToken, String error) {
+        String payload = "{\"idToken\":" + (idToken == null ? "null" : JSONObject.quote(idToken))
+                + ",\"error\":" + (error == null ? "null" : JSONObject.quote(error)) + "}";
+        webView.evaluateJavascript(
+                "window.__mandabitNativeGoogleAuth && window.__mandabitNativeGoogleAuth(" + payload + ");",
+                null
+        );
+    }
+
+    private void clearGoogleCredentialState() {
+        credentialManager.clearCredentialStateAsync(
+                new ClearCredentialStateRequest(),
+                new android.os.CancellationSignal(),
+                getMainExecutor(),
+                new CredentialManagerCallback<Void, ClearCredentialException>() {
+                    @Override
+                    public void onResult(Void result) {
+                        // The next sign-in will show the account chooser again.
+                    }
+
+                    @Override
+                    public void onError(@NonNull ClearCredentialException error) {
+                        // Firebase sign-out is already complete; credential cleanup is best effort.
+                    }
+                }
+        );
+    }
+
     private final class AlarmBridge {
         @JavascriptInterface
         public void syncAlarms(String payload) {
@@ -218,6 +324,16 @@ public class WebAppActivity extends Activity {
         @JavascriptInterface
         public void requestNotificationPermission() {
             runOnUiThread(WebAppActivity.this::requestAlarmAccess);
+        }
+
+        @JavascriptInterface
+        public void signInWithGoogle() {
+            runOnUiThread(WebAppActivity.this::startGoogleSignIn);
+        }
+
+        @JavascriptInterface
+        public void clearGoogleCredentialState() {
+            runOnUiThread(WebAppActivity.this::clearGoogleCredentialState);
         }
     }
 }
