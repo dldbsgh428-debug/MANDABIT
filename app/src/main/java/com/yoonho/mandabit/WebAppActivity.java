@@ -31,7 +31,6 @@ import androidx.credentials.GetCredentialResponse;
 import androidx.credentials.exceptions.ClearCredentialException;
 import androidx.credentials.exceptions.GetCredentialCancellationException;
 import androidx.credentials.exceptions.GetCredentialException;
-import androidx.core.content.ContextCompat;
 
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption;
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential;
@@ -246,7 +245,7 @@ public class WebAppActivity extends Activity {
         GetCredentialRequest request = new GetCredentialRequest.Builder()
                 .addCredentialOption(googleIdOption)
                 .build();
-        Executor mainExecutor = ContextCompat.getMainExecutor(this);
+        Executor mainExecutor = command -> runOnUiThread(command);
 
         credentialManager.getCredentialAsync(
                 this,
@@ -301,7 +300,7 @@ public class WebAppActivity extends Activity {
         credentialManager.clearCredentialStateAsync(
                 new ClearCredentialStateRequest(),
                 new android.os.CancellationSignal(),
-                ContextCompat.getMainExecutor(this),
+                command -> runOnUiThread(command),
                 new CredentialManagerCallback<Void, ClearCredentialException>() {
                     @Override
                     public void onResult(Void result) {
