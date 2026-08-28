@@ -55,7 +55,7 @@ public class WebAppActivity extends Activity {
         settings.setAllowFileAccess(false);
         settings.setAllowContentAccess(true);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
-        settings.setUserAgentString(settings.getUserAgentString() + " MANDABIT-ANDROID/0.4");
+        settings.setUserAgentString(settings.getUserAgentString() + " MANDABIT-ANDROID/0.4.1");
 
         android.webkit.CookieManager cookieManager = android.webkit.CookieManager.getInstance();
         cookieManager.setAcceptCookie(true);

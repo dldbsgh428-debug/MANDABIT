@@ -2,7 +2,7 @@
 
 목표를 설계하고, 습관으로 완성하다.
 
-MANDABIT Android 0.4는 최신 웹 화면을 그대로 보여 주는 WebView 앱입니다. 같은 Google 계정으로 접속한 PC·모바일·APK의 기록을 자동으로 동기화하고, Android 네이티브 알람으로 앱을 닫아도 설정한 시간에 알려줍니다.
+MANDABIT Android 0.4.1은 최신 웹 화면을 그대로 보여 주는 WebView 앱입니다. 같은 Google 계정으로 접속한 PC·모바일·APK의 기록을 자동으로 동기화하고, Android 네이티브 알람으로 앱을 닫아도 설정한 시간에 알려줍니다.
 
 ## Android 기능
 
